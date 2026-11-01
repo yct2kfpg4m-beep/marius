@@ -193536,7 +193536,7 @@ document.addEventListener('visibilitychange',async function(){
     };
     img.onerror=function(){manifest([{src:url,sizes:'any',type:'image/svg+xml'}])};
     img.src=url;
-    if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').catch(function(){})}
+    if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){(function(){var had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(had&&!window.__rl){window.__rl=1;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){try{r.update()}catch(e){}}).catch(function(){})})()}
   }catch(e){}
 })();
 
