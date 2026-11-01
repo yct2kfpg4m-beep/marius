@@ -197489,7 +197489,7 @@ cats|pisici|/kæts/`,
 That girl can sing about the cat and the cup.|Fata aceea poate cânta despre pisică și ceașcă.
 The vine grows over the wall near the old house.|Via de vie crește peste zid lângă casa veche.
 They think the thin man is the new teacher.|Ei cred că bărbatul slab este noul profesor.
-My cats like to sit by the window and watch the birds.|Pisicile mele îi place să stea lângă fereastră și să privească păsările.
+My cats like to sit by the window and watch the birds.|Pisicilor mele le place să stea lângă fereastră și să privească păsările.
 Put your tongue between your teeth to say think and they.|Pune limba între dinți ca să spui think și they.`,
 `Care sunet englezesc lipsește din română?|/θ/ din think|/ʃ/ din ship|/tʃ/ din church|/k/ din key|/θ/ nu există în română. Sunetele /ʃ/ (ș), /tʃ/ (ci) și /k/ există în română.
 Ce cuvânt trebuie să conțină /w/, nu /v/?|wine /waɪn/|vine /vaɪn/|very /ˈveri/|van /væn/|Wine începe cu /w/. Vine, very și van încep cu /v/.
@@ -199604,7 +199604,7 @@ const AV=(function(){
       try{
         const prevS=u.onstart,prevE=u.onend,prevB=u.onboundary,prevErr=u.onerror;
         const tlLocal=build(text,r||1,generic);
-        const run=function(){tl=tlLocal;lastW=-1;t0=performance.now();speaking=true;rate=r||1;show();capTxt={k:String(Math.random()),html:(function(){const esc2=function(x){return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;')};if(!generic){let ro=window.__roNext||'';window.__roNext='';if(!ro){try{ro=ROTR(text).t}catch(e){}}return ro?'<span class="rt">🇷🇴 '+esc2(ro)+'</span>':''}return String(text).split(/\s+/).filter(Boolean).map(function(w){return '<span>'+esc2(w)+'</span>'}).join(' ')})()};capSet('');try{if(window.AV_TEXT)window.AV_TEXT(text,!!generic)}catch(x){}};
+        const run=function(){tl=tlLocal;lastW=-1;t0=performance.now();speaking=true;rate=r||1;show();capTxt={k:String(Math.random()),html:(function(){const esc2=function(x){return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;')};if(!generic){let ro=window.__roNext||'';window.__roNext='';if(!ro){try{ro=(window.ROCTX?window.ROCTX(text):ROTRG(text))}catch(e){}}return ro?'<span class="rt">🇷🇴 '+esc2(ro)+'</span>':''}return String(text).split(/\s+/).filter(Boolean).map(function(w){return '<span>'+esc2(w)+'</span>'}).join(' ')})()};capSet('');try{if(window.AV_TEXT)window.AV_TEXT(text,!!generic)}catch(x){}};
         u.onstart=function(e){run();if(prevS)prevS.call(u,e)};
         u.onboundary=function(e){
           try{if(e&&e.name==='word'&&tlLocal.words){
@@ -201585,7 +201585,9 @@ window.QRUN=(function(){
     try{QG_STAT(q.skill,ok)}catch(e){}
     if(st.o.onAnswer)st.o.onAnswer(q,ok,st);
     if(st.o.feedback===false){
-      setTimeout(function(){nextQ(q)},420);return;
+      const fbx=window.__qfbHtml?window.__qfbHtml(q):'';
+      if(!fbx){setTimeout(function(){nextQ(q)},420);return}
+      foot(fbx+'<div style="height:8px"></div><button class="btn" data-a="qr_next">Continuă</button>');return;
     }
     let h='<div class="fb '+(ok?'ok':'bad')+'"><b>'+(ok?'✅ Corect!':(dk?'💡 Răspunsul corect':'❌ Nu chiar'))+'</b>';
     if(!ok)h+='<div>Răspuns corect: <b>'+esc(q.a)+'</b></div>';
@@ -202269,7 +202271,7 @@ try{render()}catch(e){}
 
 /* ===== MOTOR LOCAL: explicații, traducere RO, export (fără Claude) ===== */
 const RO_FW={i:'eu','i':'eu',you:'tu/voi',he:'el',she:'ea',it:'el/ea',we:'noi',they:'ei',me:'mine',my:'meu',your:'tău',his:'al lui',her:'a ei',our:'nostru',their:'lor',is:'este',are:'sunt',am:'sunt',was:'a fost',were:'au fost',be:'a fi',been:'fost',do:'a face',does:'face',did:'a făcut',have:'a avea',has:'are',had:'a avut',will:'va',would:'ar',can:'poate',could:'ar putea',should:'ar trebui',not:'nu',no:'nu',yes:'da',and:'și',or:'sau',but:'dar',if:'dacă',because:'pentru că',so:'deci',the:'',a:'un/o',an:'un/o',to:'a / la',of:'de',in:'în',on:'pe',at:'la',for:'pentru',with:'cu',from:'din',by:'de către',about:'despre',this:'acesta',that:'acela / că',these:'aceștia',those:'aceia',what:'ce',who:'cine',where:'unde',when:'când',why:'de ce',how:'cum',which:'care',there:'acolo',here:'aici',very:'foarte',too:'prea',also:'de asemenea',please:'vă rog',thanks:'mulțumesc',thank:'mulțumesc',hello:'bună',hi:'salut',goodbye:'la revedere',sorry:'scuze',some:'niște',any:'orice',all:'toți',more:'mai mult',much:'mult',many:'mulți',like:'a place / ca',want:'a vrea',need:'a avea nevoie',go:'a merge',going:'merg',get:'a primi',make:'a face',know:'a ști',think:'a gândi',see:'a vedea',come:'a veni',take:'a lua',give:'a da',say:'a spune',tell:'a spune',ask:'a întreba',help:'a ajuta',let:'a lăsa',us:'noi',what:'ce',now:'acum',today:'astăzi',then:'apoi',just:'doar',really:'chiar',still:'încă',again:'din nou',always:'mereu',never:'niciodată',often:'des',maybe:'poate'};
-function roClean(s){return String(s||'').replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim()}
+function roClean(s){return String(s||'').replace(/\s*\([^)]*\)/g,'').replace(/`/g,'').replace(/([.!?…])['"“”,;]+$/,'$1').replace(/[,;]+$/,'').replace(/\s+/g,' ').trim()}
 function roWord(w){
   w=String(w).toLowerCase();
   if(w.length<=2&&Object.prototype.hasOwnProperty.call(RO_FW,w))return RO_FW[w];
@@ -202280,8 +202282,26 @@ function roWord(w){
   return null;
 }
 /* traducere locală: frază întreagă din memorie, apoi expresii, apoi cuvânt cu cuvânt */
+/* index de propoziții englez|român din datele aplicației (texte de lectură, lecții, teste) */
+function roIndex(X){
+  if(window.__sentIdx)return;window.__sentIdx=1;
+  try{
+    const norm=function(s){return s.toLowerCase().replace(/[“”"]/g,'').replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'')};
+    const add=function(en,ro){const k=norm(en);if(k.indexOf(' ')<0||k.length<6)return;ro=ro.trim().replace(/[`]+/g,'').replace(/([.!?…])['"“”,;\s]+$/,'$1').replace(/[,;\s]+$/,'');if(!ro||/[|]/.test(ro))return;if(!X.ro.has(k))X.ro.set(k,ro)};
+    const rx=/^([A-Za-z“"'][^|\n]{5,260}?)\|([^|\n]{3,400})$/gm,rx2=/\[\s*(['"])([A-Z][^'"\n]{8,240}[.!?])\1\s*,\s*(['"])([^'"\n]{4,400})\3/g;
+    Array.prototype.forEach.call(document.scripts,function(s){
+      const t=s.textContent;if(!t||t.length<2000||s.id==='phdict'||s.id==='phro')return;
+      let m;while((m=rx.exec(t)))add(m[1],m[2]);
+      while((m=rx2.exec(t)))add(m[2],m[4]);
+    });
+  }catch(e){}
+}
+/* traducere doar când e sigură: frază cunoscută sau cel mult 3 cuvinte */
+window.ROTRG=function(text){
+  try{const r=ROTR(text);if(r.exact)return r.t;const n=String(text).trim().split(/\s+/).length;return n<=3?r.t:''}catch(e){return ''}
+};
 window.ROTR=function(text){
-  const X=phInit();
+  const X=phInit();roIndex(X);
   const clean=String(text).replace(/[“”"]/g,'').replace(/\s+/g,' ').trim();
   const key=clean.toLowerCase().replace(/[.!?]+$/,'');
   if(X.ro.has(key))return {t:roClean(X.ro.get(key)),exact:true};
@@ -202385,13 +202405,13 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
   const RO_CH=/[ăâîșțşţĂÂÎȘȚ]/;
   const SKIP=/traduc|înseamn|inseamn|sens|română|romana|pronun|citește|citeste|ipa|transcri/i;
   function isEn(t){t=String(t||'').trim();if(!t||t.length>160||RO_CH.test(t))return false;if(!/[A-Za-z]{2}/.test(t))return false;if(/^(nu știu|nu stiu)$/i.test(t))return false;return true}
-  function tr(t){try{const r=ROTR(String(t).replace(/_{2,}/g,' ___ '));return r.t.replace(/\s*___\s*/g,' … ').replace(/\s+/g,' ').trim()}catch(e){return ''}}
+  function tr(t){try{const r={t:ROTR(String(t).replace(/_{2,}/g,' ___ ')).t};return r.t.replace(/\s*___\s*/g,' … ').replace(/\s+/g,' ').trim()}catch(e){return ''}}
   function add(el,t,small){
     if(!el||el.dataset.autoro)return;el.dataset.autoro='1';
-    const r=tr(t);if(!r)return;
-    const d=document.createElement('div');d.className='autoro';
+    window.__ropend=false;const r=tr(t);if(!r&&!window.__ropend)return;
+    const d=document.createElement('div');d.className='autoro';d.dataset.src=t;
     d.style.cssText='font-size:'+(small?'12':'14')+'px;font-weight:400;color:#9bd1ff;margin-top:'+(small?'2':'6')+'px;line-height:1.3';
-    d.textContent='🇷🇴 '+r;
+    d.textContent='🇷🇴 '+(r||'se traduce…');
     if(small)el.appendChild(d);else el.insertAdjacentElement('afterend',d);
   }
   const IPASKIP=/pronun|ipa|transcri|scrie|scriere|dictare|ascult|cum se scrie/i;
@@ -202461,16 +202481,30 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
   function esc(x){return String(x).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
   function ipaOf(t){try{return IPAX.ipa(t)}catch(e){return ''}}
   const RO_FIX={'hello! welcome to engleză marius. let us learn english together.':'Bună! Bine ai venit la Engleză Marius. Hai să învățăm engleza împreună.'};
-  function roOf(t){const k=String(t).trim().toLowerCase();if(RO_FIX[k])return RO_FIX[k];try{return ROTR(t).t}catch(e){return ''}}
+  function roOf(t){const k=String(t).trim().toLowerCase();if(RO_FIX[k])return RO_FIX[k];try{const r=ROTR(t);return r.t||(r.pending?'se traduce…':'')}catch(e){return ''}}
+  document.addEventListener('roai',function(e){try{if(bar&&curText&&bar.classList.contains('on')){const k=String(curText).toLowerCase().replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'');if(k===e.detail.k){const r=bar.querySelector('.ro');if(r)r.textContent='🇷🇴 '+e.detail.ro}}}catch(x){}});
   function overlayOpen(){return !!document.querySelector('#ovb,#run-body')&&((document.getElementById('ovb')||{}).offsetParent||(document.getElementById('run-body')||{}).offsetParent)}
   function showBar(text,hold){
     if(!bar){bar=document.createElement('div');bar.id='fsub';document.body.appendChild(bar)}
     curText=String(text);
     const ws=curText.split(/\s+/).filter(Boolean);
-    bar.innerHTML='<div class="en">'+ws.map(function(w){return '<span>'+esc(w)+'</span>'}).join(' ')+'</div><div class="ip">'+esc(ipaOf(curText))+'</div><div class="ro">🇷🇴 '+esc(roOf(curText))+'</div>';
+    bar.innerHTML='<div class="en">'+ws.map(function(w){return '<span>'+esc(w)+'</span>'}).join(' ')+'</div><div class="ip">'+esc(ipaOf(curText))+'</div>'+(roOf(curText)?'<div class="ro">🇷🇴 '+esc(roOf(curText))+'</div>':'');
     words=bar.querySelectorAll('.en span');
+    if(dock()===false){bar.classList.remove('on');return}
     clearTimeout(hideT);bar.classList.add('on');
     hideT=setTimeout(hide,hold||(2500+ws.length*420));qstate();
+  }
+  /* bara de subtitrare stă deasupra butoanelor (Continuă / Verifică), nu peste ele */
+  function dock(){
+    const foot=document.querySelector('#ov.open #ovf,#run.show #run-foot,#run.show #foot');
+    let bottom=14,maxH=window.innerHeight*.3;
+    if(foot&&foot.offsetParent){
+      if(foot.querySelector('.fb'))return false;      /* cardul de răspuns arată deja EN + IPA + RO */
+      const r=foot.getBoundingClientRect();
+      if(r.height>0){bottom=Math.max(14,window.innerHeight-r.top+8);maxH=Math.max(70,Math.min(window.innerHeight*.3,r.top-210))}
+    }
+    bar.style.bottom=bottom+'px';bar.style.maxHeight=maxH+'px';
+    return true;
   }
   function hide(){if(bar)bar.classList.remove('on')}
   function mark(i){
@@ -202485,7 +202519,11 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
   /* pronunțare + subtitrare */
   let lastSay=0;
   const oSay=window.say;
-  window.say=function(t,r){lastSay=Date.now();return oSay.apply(this,arguments)};
+  let lastTxt='',lastTxtT=0;
+  window.say=function(t,r){
+    const now=Date.now(),k=String(t).trim().toLowerCase();
+    if(k&&k===lastTxt&&now-lastTxtT<3000)return;     /* aceeași frază cerută de două ori: o rostim o singură dată, fără sunete tăiate */
+    lastTxt=k;lastTxtT=now;lastSay=now;return oSay.apply(this,arguments)};
   function speak(t){t=String(t||'').replace(/\s+/g,' ').trim();if(!t||t.length>200)return;try{window.__fsubForce=true;window.say(t,.9)}catch(e){}setTimeout(function(){window.__fsubForce=false},400)}
   /* testează vocea */
   document.addEventListener('click',function(e){
@@ -202513,7 +202551,7 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
 
   /* ascunde traducerea RO până după răspuns la întrebări cu variante; X mereu vizibil */
   const st2=document.createElement('style');
-  st2.textContent='.qhide .autoro,.qhide .autoipa.ro{display:none!important}#fsub.hro .ro{display:none}#ov .ox{display:flex!important}';
+  st2.textContent='.qhide .autoro,.qhide .autoipa.ro{display:none!important}#fsub.hro .ro{display:none}#ov .ox{display:inline-block!important;flex:0 0 36px}';
   document.head.appendChild(st2);
   function qstate(){
     document.querySelectorAll('#ovb,#run-body').forEach(function(r){
@@ -202544,6 +202582,114 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
     const el=e.target.closest&&e.target.closest('[data-a="share"],[data-a="exportapp"]');
     if(el){e.stopImmediatePropagation();e.preventDefault();dlg()}
   },true);
+})();
+
+/* ===== n4: traducere fidelă (frază din bază → Claude, când există → aproximativ), caption contextual, defilare în mesaje, feedback test ===== */
+(function(){
+  const orig=window.ROTR;
+  const norm=function(s){return String(s).toLowerCase().replace(/[“”"]/g,'').replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'')};
+  const nk=function(s){return norm(String(s).replace(/_{2,}|…/g,' ___ '))};
+  function claudeOk(){try{return typeof SMP!=='undefined'&&!!SMP&&(typeof claudeOn!=='function'||claudeOn())}catch(e){return false}}
+  let AI={};try{AI=JSON.parse(localStorage.getItem('marius_roai')||'{}')||{}}catch(e){}
+  function aiSave(){try{const ks=Object.keys(AI);if(ks.length>600)ks.slice(0,ks.length-600).forEach(function(k){delete AI[k]});localStorage.setItem('marius_roai',JSON.stringify(AI))}catch(e){}}
+  const pend={};
+  function aiAsk(text){
+    const k=nk(text);if(AI[k]||pend[k])return;
+    let ok=false;try{ok=typeof SMP!=='undefined'&&!!SMP&&(typeof claudeOn!=='function'||claudeOn())}catch(e){}
+    if(!ok)return;pend[k]=1;
+    try{
+      SMP.json([{role:'user',content:'Tradu în română, fidel și natural, în context (NU cuvânt cu cuvânt), această propoziție din engleză. Respectă sensul, timpul verbal și ordinea firească din română; traducerea trebuie să sune ca a unui vorbitor nativ. Dacă apare ___ (spațiu liber), păstrează ___ în traducere la locul potrivit. Răspunde DOAR cu JSON: {"ro":"traducerea"}\nPropoziție: '+text}],{cache:true,modelTier:'default'}).then(function(r){
+        const ro=r&&typeof r.ro==='string'?r.ro.trim():'';
+        if(ro){AI[k]=ro;aiSave();document.dispatchEvent(new CustomEvent('roai',{detail:{k:k,ro:ro}}))}
+      }).catch(function(){}).then(function(){delete pend[k]});
+    }catch(e){delete pend[k]}
+  }
+  let keys=null;
+  function prefix(k){
+    if(k.length<9)return null;
+    const X=phInit();try{roIndex(X)}catch(e){}
+    if(!keys)keys=Array.from(X.ro.keys()).filter(function(x){return x.length>=12&&x.indexOf(' ')>0});
+    for(let i=0;i<keys.length;i++){if(keys[i].indexOf(k)===0)return X.ro.get(keys[i])}
+    return null;
+  }
+  function loose(t,approx){
+    t=String(t).replace(/articolul\s+(?:ne)?hotărât/gi,'').replace(/\b(un)\/o\b/gi,'$1').replace(/\b(tu)\/voi\b/gi,'$1').replace(/\b(el)\/ea\b/gi,'$1').replace(/\s+/g,' ').trim();
+    return (approx&&t?'≈ ':'')+t;
+  }
+  window.ROTR=function(text){
+    window.__ropend=false;
+    const r=orig(text);if(r.exact)return r;
+    const clean=String(text).trim(),k=nk(clean);
+    if(AI[k])return {t:AI[k],exact:true,ai:true};
+    const w=k.split(' ').filter(Boolean).length;
+    if(w>=3){
+      if(claudeOk()){aiAsk(clean);window.__ropend=true;return {t:'',exact:false,pending:true}}
+      if(w>=4)return {t:'',exact:false};
+    }
+    return {t:loose(r.t,false),exact:false};
+  };
+  /* caption: frază citită pe bucăți → traducerea întregii fraze */
+  let buf='';
+  window.ROCTX=function(chunk){
+    const now=performance.now();if(now-(window.__tpEnd||0)>2200)buf='';
+    buf=(buf+' '+chunk).trim();
+    const k=nk(buf);window.__lastCapKey=k;
+    const X=phInit();let ro=X.ro.get(k)||AI[k]||prefix(k);
+    if(ro)return roClean(ro);
+    const w=k.split(' ').filter(Boolean).length;
+    if(w>=4){if(claudeOk())aiAsk(buf);return ''}
+    const r=window.ROTR(buf);return r.t;
+  };
+  document.addEventListener('roai',function(e){
+    const d=e.detail;
+    document.querySelectorAll('.autoro').forEach(function(el){if(el.dataset.src&&nk(el.dataset.src)===d.k)el.textContent='🇷🇴 '+String(d.ro).replace(/___/g,'…')});
+    if(window.__lastCapKey===d.k){const c=document.querySelector('.avcap');if(c&&!c.querySelector('.rt'))c.innerHTML='<span class="rt">🇷🇴 '+String(d.ro).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>'}
+  });
+  /* feedback după răspuns în test: rămâne pe ecran până apeși Continuă */
+  function esc(x){return String(x).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+  function isEn(t){return /[A-Za-z]{2}/.test(t)&&!/[ăâîșțĂÂÎȘȚ]/.test(t)&&!/^\s*\/.*\/\s*$/.test(t)}
+  window.__qfbHtml=function(q){
+    try{
+      const rows=[];
+      function add(t,pre,doIpa){
+        t=String(t||'').replace(/_{2,}/g,'___').trim();if(!t||!isEn(t)||t.length>220)return;
+        let ro='',ip='',pend=false;try{const r=window.ROTR(t);ro=r.t;pend=!!r.pending}catch(e){}try{ip=IPAX.ipa(t)}catch(e){}
+        rows.push('<div style="margin:2px 0 8px"><div style="font-weight:700">'+(pre||'')+esc(t.replace(/___/g,'…'))+'</div>'+(ip?'<div style="color:var(--ipa);font-size:14px">'+esc(ip)+'</div>':'')+((ro||pend)?'<div class="autoro" data-src="'+esc(t)+'" style="color:#9bd1ff;font-size:14px">🇷🇴 '+esc(ro?ro.replace(/___/g,'…'):'se traduce…')+'</div>':'')+'</div>');
+      }
+      const pr=String(q.prompt||''),an=String(q.a||'');
+      const qt=(pr.match(/[„"“]([^”"“]{1,80})[”"]/)||[])[1];
+      function fixed(en,ro,pre){let ip='';try{ip=IPAX.ipa(en)}catch(e){}
+        rows.push('<div style="margin:2px 0 8px"><div style="font-weight:700">'+(pre||'')+esc(en)+'</div>'+(ip?'<div style="color:var(--ipa);font-size:14px">'+esc(ip)+'</div>':'')+'<div style="color:#9bd1ff;font-size:14px">🇷🇴 '+esc(ro)+'</div></div>')}
+      if(qt&&/^\s*ce\s+înseamnă/i.test(pr)){fixed(qt,an,'Varianta corectă: ');setTimeout(function(){try{window.say(qt,.9)}catch(e){}},250);return '<div class="fb" style="background:rgba(155,209,255,.08);border:1px solid rgba(155,209,255,.35);max-height:34vh;overflow:auto">'+rows.join('')+'</div>'}
+      if(qt&&!/_{2,}/.test(pr)&&isEn(an)){fixed(an,qt,'Varianta corectă: ');setTimeout(function(){try{window.say(an,.9)}catch(e){}},250);return '<div class="fb" style="background:rgba(155,209,255,.08);border:1px solid rgba(155,209,255,.35);max-height:34vh;overflow:auto">'+rows.join('')+'</div>'}
+      if(/_{2,}/.test(pr)&&isEn(an)){add(pr.replace(/_{2,}/,an),'Varianta corectă: ')}
+      else{add(pr);if(an&&an!==pr)add(an,'Varianta corectă: ')}
+      if(!rows.length)return '';
+      if(q.a&&isEn(String(q.a))){setTimeout(function(){try{window.say(String(q.a),.9)}catch(e){}},250)}
+      return '<div class="fb" style="background:rgba(155,209,255,.08);border:1px solid rgba(155,209,255,.35);max-height:34vh;overflow:auto">'+rows.join('')+'</div>';
+    }catch(e){return ''}
+  };
+  /* defilare automată în mesajul Marei, pe locul unde a ajuns cu citirea */
+  const st=document.createElement('style');st.textContent='::highlight(mara-now){background:rgba(255,209,102,.3);color:#fff}';document.head.appendChild(st);
+  let cur={el:null,pos:0};
+  function scrollMsg(text){
+    const box=document.getElementById('avpmsg');if(!box)return;
+    const bs=box.querySelectorAll('.ava');const last=bs[bs.length-1];if(!last)return;
+    if(cur.el!==last)cur={el:last,pos:0};
+    const t=String(text).trim().toLowerCase();if(t.length<2)return;
+    const tw=document.createTreeWalker(last,NodeFilter.SHOW_TEXT),nodes=[];let n;while((n=tw.nextNode()))nodes.push(n);
+    const low=nodes.map(function(x){return x.nodeValue}).join('').toLowerCase();
+    let i=low.indexOf(t,cur.pos);if(i<0)i=low.indexOf(t);if(i<0)return;
+    cur.pos=i+t.length;
+    let off=0,fn=null,fo=0;for(let k=0;k<nodes.length;k++){const L=nodes[k].nodeValue.length;if(i<off+L){fn=nodes[k];fo=i-off;break}off+=L}
+    if(!fn)return;
+    const rg=document.createRange();rg.setStart(fn,fo);rg.setEnd(fn,Math.min(fn.nodeValue.length,fo+t.length));
+    const rr=rg.getBoundingClientRect(),br=box.getBoundingClientRect();
+    try{box.scrollTo({top:Math.max(0,box.scrollTop+(rr.top-br.top)-br.height*.35),behavior:'smooth'})}catch(e){box.scrollTop=Math.max(0,box.scrollTop+(rr.top-br.top)-br.height*.35)}
+    try{if(window.CSS&&CSS.highlights&&window.Highlight)CSS.highlights.set('mara-now',new Highlight(rg))}catch(e){}
+  }
+  const oT=window.AV_TEXT;
+  window.AV_TEXT=function(t,g){try{scrollMsg(t)}catch(e){}return oT&&oT.apply(this,arguments)};
 })();
 
 </script>
