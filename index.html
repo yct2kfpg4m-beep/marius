@@ -202273,6 +202273,68 @@ window.PLX=(function(){
 })();
 try{render()}catch(e){}
 
+/* bancă de traduceri verificate (offline = la fel ca cu Claude pentru textele din aplicație) */
+const RO_BANK={
+"You say we, but I notice that you have already spoken to an estate agent without mentioning it to me.":"Spui „noi”, dar observ că ai vorbit deja cu un agent imobiliar fără să-mi spui.",
+"Check the hallway. Quietly.":"Verifică holul. În liniște.",
+"Not that way. The window is safer, and I am already waiting outside.":"Nu pe acolo. Fereastra e mai sigură, iar eu aștept deja afară.",
+"Hello! This is how I sound.":"Salut! Așa sună vocea mea.",
+"Hi! What can I get for you?":"Bună! Ce vă pot servi?",
+"Sure. Would you like something to eat?":"Sigur. Doriți și ceva de mâncare?",
+"Yes, a chocolate muffin, please.":"Da, o brioșă cu ciocolată, vă rog.",
+"That is six pounds fifty.":"Fac șase lire și cincizeci de pence.",
+"Can I pay by card?":"Pot plăti cu cardul?",
+"Good morning. Passport, please.":"Bună dimineața. Pașaportul, vă rog.",
+"Here you are. I have one suitcase.":"Poftiți. Am o singură valiză.",
+"Please put it on the scale. Window or aisle seat?":"Vă rog, puneți-o pe cântar. Loc la geam sau la culoar?",
+"Your gate is B12. Boarding starts at ten.":"Poarta dumneavoastră este B12. Îmbarcarea începe la zece.",
+"Thank you. Where can I find the gate?":"Mulțumesc. Unde găsesc poarta?",
+"Welcome! Do you have a reservation?":"Bine ați venit! Aveți o rezervare?",
+"Yes, under the name Popescu, for three nights.":"Da, pe numele Popescu, pentru trei nopți.",
+"Perfect. Here is your key, room 305.":"Perfect. Iată cheia dumneavoastră, camera 305.",
+"Excuse me, the air conditioning does not work.":"Scuzați-mă, aerul condiționat nu funcționează.",
+"Thank you very much. What time is breakfast?":"Vă mulțumesc mult. La ce oră se servește micul dejun?",
+"Breakfast is from seven to ten.":"Micul dejun se servește între șapte și zece.",
+"Hello! Can I help you?":"Bună ziua! Vă pot ajuta?",
+"Yes, I am looking for a blue jacket in medium.":"Da, caut o geacă albastră, mărimea M.",
+"Here you are. The fitting room is over there.":"Poftiți. Cabina de probă este acolo.",
+"It is a bit too big. Do you have a smaller size?":"Este puțin cam mare. Aveți o mărime mai mică?",
+"Yes, here is a small one.":"Da, iată una mică.",
+"Perfect. How much is it?":"Perfect. Cât costă?",
+"It is forty-five pounds.":"Costă patruzeci și cinci de lire.",
+"Excuse me, how do I get to the train station?":"Scuzați-mă, cum ajung la gară?",
+"Thank you very much for your help.":"Vă mulțumesc mult pentru ajutor.",
+"You are welcome. Have a nice day!":"Cu plăcere. O zi frumoasă!",
+"Good evening. Are you ready to order?":"Bună seara. Sunteți gata să comandați?",
+"Yes, I would like the grilled salmon, please.":"Da, aș dori somonul la grătar, vă rog.",
+"Would you like anything to drink?":"Doriți ceva de băut?",
+"Just water, please. Does the salmon contain nuts?":"Doar apă, vă rog. Somonul conține nuci?",
+"No, thank you. Could I have the bill, please?":"Nu, mulțumesc. Aș putea să primesc nota de plată, vă rog?",
+"Customer service, how can I help you?":"Serviciul clienți, cu ce vă pot ajuta?",
+"Hello, my order has not arrived yet.":"Bună ziua, comanda mea nu a ajuns încă.",
+"Yes, it is five five two seven.":"Da, este cinci cinci doi șapte.",
+"Thank you. It seems the parcel is delayed.":"Mulțumesc. Se pare că pachetul are întârziere.",
+"When will it arrive? I need it urgently.":"Când va ajunge? Am nevoie de el urgent.",
+"It should arrive by Friday. We will refund the delivery.":"Ar trebui să ajungă până vineri. Vă vom rambursa taxa de livrare.",
+"Thank you for your help.":"Vă mulțumesc pentru ajutor.",
+"Good morning everyone. Who would like to start?":"Bună dimineața tuturor. Cine dorește să înceapă?",
+"Interesting. Could you explain how it would work?":"Interesant. Ați putea explica cum ar funcționa?",
+"We could automate the weekly report and save two hours.":"Am putea automatiza raportul săptămânal și am economisi două ore.",
+"That sounds good, but what about the cost?":"Sună bine, dar ce se întâmplă cu costul?",
+"The cost is low, and it pays for itself within a month.":"Costul este mic, iar investiția se amortizează într-o lună.",
+"Great, I will prepare a short plan.":"Excelent, voi pregăti un plan scurt.",
+"Some people say that working from home is better. What do you think?":"Unii spun că e mai bine să lucrezi de acasă. Tu ce crezi?",
+"In my opinion, it depends on the type of job.":"După părerea mea, depinde de tipul de job.",
+"But surely people are more productive at home.":"Dar sigur oamenii sunt mai productivi acasă.",
+"Perhaps you are right.":"Poate că ai dreptate.",
+"Hi! How are you today?":"Salut! Ce mai faci astăzi?",
+"Nice! What do you like doing in your free time?":"Bine! Ce îți place să faci în timpul liber?",
+"That sounds relaxing. What are your plans for the weekend?":"Sună relaxant. Ce planuri ai pentru weekend?",
+"Where are you from?":"De unde ești?",
+"Can I have some water, please?":"Pot să primesc puțină apă, vă rog?",
+"She is a teacher and he is a doctor.":"Ea este profesoară, iar el este medic."
+};
+
 /* ===== MOTOR LOCAL: explicații, traducere RO, export (fără Claude) ===== */
 const RO_FW={i:'eu','i':'eu',you:'tu/voi',he:'el',she:'ea',it:'el/ea',we:'noi',they:'ei',me:'mine',my:'meu',your:'tău',his:'al lui',her:'a ei',our:'nostru',their:'lor',is:'este',are:'sunt',am:'sunt',was:'a fost',were:'au fost',be:'a fi',been:'fost',do:'a face',does:'face',did:'a făcut',have:'a avea',has:'are',had:'a avut',will:'va',would:'ar',can:'poate',could:'ar putea',should:'ar trebui',not:'nu',no:'nu',yes:'da',and:'și',or:'sau',but:'dar',if:'dacă',because:'pentru că',so:'deci',the:'',a:'un/o',an:'un/o',to:'a / la',of:'de',in:'în',on:'pe',at:'la',for:'pentru',with:'cu',from:'din',by:'de către',about:'despre',this:'acesta',that:'acela / că',these:'aceștia',those:'aceia',what:'ce',who:'cine',where:'unde',when:'când',why:'de ce',how:'cum',which:'care',there:'acolo',here:'aici',very:'foarte',too:'prea',also:'de asemenea',please:'vă rog',thanks:'mulțumesc',thank:'mulțumesc',hello:'bună',hi:'salut',goodbye:'la revedere',sorry:'scuze',some:'niște',any:'orice',all:'toți',more:'mai mult',much:'mult',many:'mulți',like:'a place / ca',want:'a vrea',need:'a avea nevoie',go:'a merge',going:'merg',get:'a primi',make:'a face',know:'a ști',think:'a gândi',see:'a vedea',come:'a veni',take:'a lua',give:'a da',say:'a spune',tell:'a spune',ask:'a întreba',help:'a ajuta',let:'a lăsa',us:'noi',what:'ce',now:'acum',today:'astăzi',then:'apoi',just:'doar',really:'chiar',still:'încă',again:'din nou',always:'mereu',never:'niciodată',often:'des',maybe:'poate'};
 function roClean(s){return String(s||'').replace(/\s*\([^)]*\)/g,'').replace(/`/g,'').replace(/([.!?…])['"“”,;]+$/,'$1').replace(/[,;]+$/,'').replace(/\s+/g,' ').trim()}
@@ -202298,6 +202360,7 @@ function roIndex(X){
     const norm=function(s){return s.toLowerCase().replace(/[“”"]/g,'').replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'')};
     const add=function(en,ro){const k=norm(en);if(k.indexOf(' ')<0||k.length<6)return;ro=ro.trim().replace(/[`]+/g,'').replace(/([.!?…])['"“”,;\s]+$/,'$1').replace(/[,;\s]+$/,'');if(!ro||/[|]/.test(ro))return;if(!X.ro.has(k))X.ro.set(k,ro)};
     const rx=/^([A-Za-z“"'][^|\n]{5,260}?)\|([^|\n]{3,400})$/gm,rx2=/\[\s*(['"])([A-Z][^'"\n]{8,240}[.!?])\1\s*,\s*(['"])([^'"\n]{4,400})\3/g;
+    try{Object.keys(RO_BANK).forEach(function(k){X.ro.set(norm(k),RO_BANK[k])})}catch(e){}
     Array.prototype.forEach.call(document.scripts,function(s){
       const t=s.textContent;if(!t||t.length<2000||s.id==='phdict'||s.id==='phro')return;
       let m;while((m=rx.exec(t)))add(m[1],m[2]);
@@ -202763,6 +202826,107 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
     });
   }
   let at=0;new MutationObserver(function(){if(!at)at=setTimeout(function(){at=0;try{annotate()}catch(e){}},250)}).observe(document.body,{childList:true,subtree:true});
+})();
+
+/* ===== MARA LOCAL EXTINS: conversație pregătită pe subiecte frecvente (fără Claude) ===== */
+(function(){
+const S1=function(t){return cbtn('🔊 '+t,'say',{t:t})};
+const T=[
+ [/(cum ma prezint|prezentare|how to introduce|introduc|prezinta-te|spune despre tine)/,
+  '🙋 **Cum te prezinți în engleză**\n• [[Hi, I\'m Marius. Nice to meet you.]] – Salut, sunt Marius. Încântat de cunoștință.\n• [[I\'m from Romania.]] – Sunt din România.\n• [[I work as an engineer.]] – Lucrez ca inginer.\n• [[I\'m learning English because I want to travel and work abroad.]] – Învăț engleza pentru că vreau să călătoresc și să lucrez în străinătate.\n\nSpune-le cu voce tare, apoi înlocuiește numele și meseria cu ale tale.',
+  ['Hi, I\'m Marius. Nice to meet you.','I\'m from Romania.']],
+ [/(cum ma salut|salutari|cum spun buna|buna dimineata in engleza|how do you greet)/,
+  '👋 **Salutări**\n• [[Good morning.]] – Bună dimineața. (până la prânz)\n• [[Good afternoon.]] – Bună ziua. (după-amiază)\n• [[Good evening.]] – Bună seara.\n• [[Hi! / Hello!]] – Salut! / Bună!\n• [[How are you?]] – Ce mai faci?\n• [[I\'m fine, thank you. And you?]] – Bine, mulțumesc. Și tu?\n• [[Good night.]] – Noapte bună. (doar la despărțire)',
+  ['How are you?','Good morning.']],
+ [/(cafenea|restaurant|comand|meniu|mancare in engleza|la masa|nota de plata|order food)/,
+  '🍽️ **La restaurant**\n• [[Could I see the menu, please?]] – Aș putea vedea meniul, vă rog?\n• [[I\'d like the chicken salad.]] – Aș dori salata cu pui.\n• [[What do you recommend?]] – Ce recomandați?\n• [[Does it contain nuts?]] – Conține nuci?\n• [[Could we have the bill, please?]] – Ne puteți aduce nota de plată, vă rog?\n• [[Can I pay by card?]] – Pot plăti cu cardul?\n\nPoți juca scena cu mine: scrie „joc de rol restaurant”.',
+  ['Could I see the menu, please?','Could we have the bill, please?']],
+ [/(aeroport|avion|zbor|bagaj|imbarcare|pasaport|airport|check-in)/,
+  '✈️ **La aeroport**\n• [[Where is the check-in desk?]] – Unde este ghișeul de check-in?\n• [[I have one suitcase to check in.]] – Am o valiză de predat.\n• [[Window or aisle seat?]] – Loc la geam sau la culoar?\n• [[Which gate is it?]] – Care este poarta?\n• [[My flight has been delayed.]] – Zborul meu a fost amânat.\n• [[Where can I collect my luggage?]] – Unde îmi pot ridica bagajul?',
+  ['Where is the check-in desk?','Which gate is it?']],
+ [/(hotel|cazare|rezervare|\bcamera\b|receptie|booking)/,
+  '🏨 **La hotel**\n• [[I have a reservation under the name Popescu.]] – Am o rezervare pe numele Popescu.\n• [[Could I have a room with a view?]] – Aș putea primi o cameră cu vedere?\n• [[What time is breakfast?]] – La ce oră e micul dejun?\n• [[The Wi-Fi doesn\'t work.]] – Wi-Fi-ul nu funcționează.\n• [[Could I check out at noon?]] – Pot elibera camera la prânz?',
+  ['I have a reservation.','What time is breakfast?']],
+ [/(indicatii|cum ajung|directii|unde este|pe strada|directions|get to the)/,
+  '🧭 **Indicații**\n• [[Excuse me, how do I get to the station?]] – Scuzați-mă, cum ajung la gară?\n• [[Go straight ahead.]] – Mergeți înainte.\n• [[Turn left at the traffic lights.]] – Faceți stânga la semafor.\n• [[It\'s on the right, next to the bank.]] – E pe dreapta, lângă bancă.\n• [[How far is it?]] – Cât de departe e?\n• [[It\'s about five minutes on foot.]] – E la vreo cinci minute pe jos.',
+  ['Excuse me, how do I get to the station?','Turn left at the traffic lights.']],
+ [/(magazin|cumpar|haine|\bpret\b|cat costa|shopping|marime|proba)/,
+  '🛍️ **La cumpărături**\n• [[How much is this?]] – Cât costă asta?\n• [[Do you have this in a smaller size?]] – Aveți asta într-o mărime mai mică?\n• [[Can I try it on?]] – Pot să o probez?\n• [[It\'s too expensive.]] – E prea scump.\n• [[I\'ll take it.]] – O iau.\n• [[Do you accept cards?]] – Acceptați carduri?',
+  ['How much is this?','Can I try it on?']],
+ [/(sedinta|meeting|birou|la serviciu|\bjob\b|interviu|munca|colegi|angajare|\bcv\b)/,
+  '💼 **La muncă**\n• [[Let\'s get started.]] – Să începem.\n• [[Could you send me the report by Friday?]] – Mi-ai putea trimite raportul până vineri?\n• [[I\'ll follow up with an email.]] – Revin cu un e-mail.\n• [[I agree with you on that point.]] – Sunt de acord cu tine în privința asta.\n• [[I\'m afraid I can\'t make it on Monday.]] – Mă tem că nu pot ajunge luni.\n• [[Could we reschedule the meeting?]] – Am putea reprograma ședința?',
+  ['Let\'s get started.','Could we reschedule the meeting?']],
+ [/(telefon|apel|sun la|phone call|la telefon)/,
+  '📞 **La telefon**\n• [[Hello, this is Marius speaking.]] – Alo, vorbește Marius.\n• [[Could I speak to Ms Brown, please?]] – Aș putea vorbi cu doamna Brown?\n• [[Hold on a moment, please.]] – Un moment, vă rog.\n• [[Could you repeat that, please?]] – Puteți repeta, vă rog?\n• [[I\'ll call you back later.]] – Te sun mai târziu.',
+  ['Could you repeat that, please?']],
+ [/(email|e-mail|scrisoare|scrie un mesaj|formal|informal|scrisoare formala)/,
+  '✉️ **E-mail în engleză**\n• Început formal: [[Dear Mr Smith,]] – Stimate domnule Smith,\n• Motivul: [[I am writing to ask about…]] – Vă scriu pentru a întreba despre…\n• Cerere: [[Could you please send me more information?]] – Ați putea să-mi trimiteți mai multe informații?\n• Final: [[I look forward to hearing from you.]] – Aștept răspunsul dumneavoastră.\n• Semnătură: [[Kind regards, Marius]] – Cu stimă, Marius\n\nÎntre prieteni: [[Hi Anna,]] … [[Best wishes,]] / [[Cheers,]].',
+  ['I am writing to ask about the job.','I look forward to hearing from you.']],
+ [/(vreme|meteo|ploua|soare|weather|temperatura afara)/,
+  '🌦️ **Vremea**\n• [[What\'s the weather like today?]] – Cum e vremea azi?\n• [[It\'s sunny and warm.]] – E senin și cald.\n• [[It\'s raining.]] – Plouă.\n• [[It\'s freezing!]] – E un ger!\n• [[It\'s going to snow tomorrow.]] – Mâine va ninge.\n• [[Take an umbrella.]] – Ia o umbrelă.',
+  ['What\'s the weather like today?','It\'s raining.']],
+ [/(familie|frate|sora|parinti|copii|family)/,
+  '👨‍👩‍👧 **Familia**\n• [[I have two brothers and a sister.]] – Am doi frați și o soră.\n• [[My parents live in a small town.]] – Părinții mei locuiesc într-un orășel.\n• [[I\'m an only child.]] – Sunt copil unic.\n• [[She is my aunt, and he is my cousin.]] – Ea e mătușa mea, iar el e vărul meu.\n• [[Do you have any children?]] – Ai copii?',
+  ['I have two brothers and a sister.']],
+ [/(hobby|timp liber|pasiuni|ce iti place sa faci|free time)/,
+  '🎯 **Timpul liber**\n• [[In my free time I like reading and cycling.]] – În timpul liber îmi place să citesc și să merg cu bicicleta.\n• [[I\'m into photography.]] – Sunt pasionat de fotografie.\n• [[I play football every Sunday.]] – Joc fotbal în fiecare duminică.\n• [[What do you do for fun?]] – Ce faci pentru distracție?',
+  ['In my free time I like reading.','What do you do for fun?']],
+ [/(cer scuze|\bscuze\b|imi pare rau|apologi|sorry)/,
+  '🙏 **Scuze și politețe**\n• [[I\'m sorry.]] – Îmi pare rău.\n• [[I\'m so sorry I\'m late.]] – Îmi pare foarte rău că am întârziat.\n• [[Excuse me.]] – Scuzați-mă. (să atragi atenția / să treci)\n• [[Pardon?]] – Poftim? (nu am auzit)\n• [[No problem. / Don\'t worry about it.]] – Nicio problemă.',
+  ['I\'m so sorry I\'m late.','Excuse me.']],
+ [/(repet|nu am inteles|mai rar|vorbeste mai incet|don.t understand)/,
+  '🔁 **Când nu înțelegi**\n• [[Could you repeat that, please?]] – Ați putea repeta, vă rog?\n• [[Could you speak more slowly?]] – Ați putea vorbi mai rar?\n• [[I didn\'t catch that.]] – N-am prins ce ai spus.\n• [[What does … mean?]] – Ce înseamnă …?\n• [[How do you spell that?]] – Cum se scrie?',
+  ['Could you speak more slowly?']],
+ [/(\bora\b|cat este ceasul|ce ora|what time|ceas|\bdata\b|zilele saptamanii|\bluni\b)/,
+  '🕒 **Ora și zilele**\n• [[What time is it?]] – Cât este ceasul?\n• [[It\'s half past three.]] – E trei și jumătate.\n• [[It\'s a quarter to five.]] – E cinci fără un sfert.\n• [[The meeting is on Tuesday at nine.]] – Ședința e marți la nouă.\n• Zilele: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.',
+  ['What time is it?','It\'s half past three.']],
+ [/(numere|cifre|numara|numbers|cat face)/,
+  '🔢 **Numere**\n1 one · 2 two · 3 three · 4 four · 5 five · 6 six · 7 seven · 8 eight · 9 nine · 10 ten\n11 eleven · 12 twelve · 13 thirteen · 20 twenty · 30 thirty · 100 one hundred\nAtenție: [[thirteen]] vs [[thirty]] – accentul cade pe silaba diferită (thir-TEEN / THIR-ty).',
+  ['thirteen','thirty']],
+ [/(phrasal|verbe frazale|give up|look up|take off)/,
+  '🧩 **Verbe frazale frecvente**\n• [[give up]] – a renunța\n• [[look for]] – a căuta\n• [[look after]] – a avea grijă de\n• [[take off]] – a decola / a-și scoate (haina)\n• [[turn on / turn off]] – a porni / a opri\n• [[find out]] – a afla\n• [[get up]] – a se ridica din pat\n• [[carry on]] – a continua\nExemplu: [[I\'m looking for my keys.]] – Îmi caut cheile.',
+  ['I\'m looking for my keys.','Don\'t give up!']],
+ [/(sanatate|doctor|medic|ma doare|bolnav|farmacie|health)/,
+  '🩺 **La doctor**\n• [[I don\'t feel well.]] – Nu mă simt bine.\n• [[I have a headache.]] – Mă doare capul.\n• [[I have a sore throat.]] – Mă doare gâtul.\n• [[How long have you had these symptoms?]] – De cât timp ai aceste simptome?\n• [[I need a prescription.]] – Am nevoie de o rețetă.',
+  ['I don\'t feel well.','I have a headache.']],
+ [/(transport|autobuz|tren|metrou|taxi|bilet)/,
+  '🚆 **Transport**\n• [[A return ticket to London, please.]] – Un bilet dus-întors la Londra, vă rog.\n• [[What time does the next train leave?]] – La ce oră pleacă următorul tren?\n• [[Which platform?]] – Care peron?\n• [[Does this bus go to the city centre?]] – Autobuzul ăsta merge în centru?\n• [[Could you take me to the airport?]] – Ați putea să mă duceți la aeroport?',
+  ['A return ticket to London, please.']],
+ [/(\bfoame\b)/,
+  '🍞 [[I\'m hungry.]] – Mi-e foame. · [[I\'m thirsty.]] – Mi-e sete. · [[I\'m tired.]] – Sunt obosit. · [[I\'m cold.]] – Mi-e frig. · [[I\'m hot.]] – Mi-e cald.\nAtenție: în engleză se folosește „to be” (I am), nu „to have”.',
+  ['I\'m hungry.']],
+ [/(esti om|esti ai|cine esti|cum te cheama|ce esti)/,
+  'Sunt Mara, profesoara ta de engleză 👩‍🏫. Te ajut cu pronunția, gramatica, vocabularul și conversația. Acum lucrez în modul local, deci răspund la subiecte pregătite (restaurant, aeroport, muncă, prezentare, indicații, familie, vreme și altele). Cu Claude conectat pot vorbi liber despre orice.',
+  []],
+ [/(ce faci|cum esti|ce mai faci)/,
+  'Sunt bine, mulțumesc! 😊 Gata să exersăm. Întreabă-mă „cum ma prezint”, „la restaurant” sau „la aeroport”, ori spune-mi un subiect.',
+  []]
+];
+/* conversație în engleză: răspunsuri scurte + traducere */
+const E=[
+ [/^(hi|hello|hey)\b.{0,20}$/,'Hello! 👋 How are you today?','Salut! Ce mai faci azi?'],
+ [/how are you/,'I\'m great, thank you! And you?','Foarte bine, mulțumesc! Tu?'],
+ [/(i\'m|i am) (fine|good|great|ok|okay|well)/,'Glad to hear that! What did you do today?','Mă bucur! Ce ai făcut azi?'],
+ [/my name is|i\'m called/,'Nice to meet you! Where are you from?','Încântată de cunoștință! De unde ești?'],
+ [/(i\'m|i am) from/,'That sounds interesting! What do you like about your city?','Sună interesant! Ce îți place la orașul tău?'],
+ [/(thank you|thanks)/,'You\'re welcome!','Cu plăcere!'],
+ [/(good morning)/,'Good morning! Did you sleep well?','Bună dimineața! Ai dormit bine?'],
+ [/(good night)/,'Good night! Sleep well.','Noapte bună! Somn ușor.'],
+ [/(goodbye|bye|see you)/,'Goodbye! See you soon.','La revedere! Pe curând.'],
+ [/i (like|love|enjoy) /,'Nice! Why do you like it?','Frumos! De ce îți place?'],
+ [/i (work|study)/,'Interesting! What do you like most about it?','Interesant! Ce îți place cel mai mult la asta?'],
+ [/\?$/,'That\'s a good question. Let\'s think about it together: what do you think?','E o întrebare bună. Haide să ne gândim împreună: tu ce crezi?']
+];
+const _reply=reply;
+reply=function(raw){
+  try{
+    const t=nrm(raw);
+    for(const x of E){if(/^[a-z0-9' ,.?!-]+$/.test(t)&&/\b(i|you|my|hello|hi|hey|good|thank|thanks|how|what|where|bye|goodbye)\b/.test(t)&&x[0].test(t)){
+      return B('[['+x[1]+']]\n🇷🇴 '+x[2]+'\n\n💡 Răspunde-mi în engleză – vorbim pas cu pas.',[S1(x[1])])}}
+    for(const x of T){if(x[0].test(t)){return B(x[1],x[2].map(S1))}}
+  }catch(e){}
+  return _reply(raw);
+};
 })();
 
 </script>
