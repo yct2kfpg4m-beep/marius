@@ -199677,11 +199677,11 @@ const AVP=(function(){
     inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();send()}});
     hint();quick();
   }
-  function hint(){msg.innerHTML='<div class="hint">👋 Sunt Mara, profesoara ta. Apasă 🎤 și vorbește în română sau engleză, sau scrie. Spune-mi ce lecție, cuvânt sau frază vrei: o citim împreună cu textul afișat, te ascult, te corectez și răspund la întrebări. Exemple: „începem lecțiile de nivelul A1”, „citește lecția 5”, „exersează: I would like a coffee”.</div>'}
+  function hint(){if(window.__tutHome&&window.__tutHome(msg))return;msg.innerHTML='<div class="hint">👋 Sunt Mara, profesoara ta. Apasă 🎤 și vorbește în română sau engleză, sau scrie. Spune-mi ce lecție, cuvânt sau frază vrei: o citim împreună cu textul afișat, te ascult, te corectez și răspund la întrebări. Exemple: „începem lecțiile de nivelul A1”, „citește lecția 5”, „exersează: I would like a coffee”.</div>'}
   function quick(){
     const q=document.getElementById('avpq');if(!q)return;
     const L=(typeof curLevel==='function')?curLevel():'A1';
-    const items=[['🎓 Începe nivelul '+L,'începem lecțiile de nivelul '+L],['📚 Citește lecția','read'],['🎯 Exersăm pronunția','drill'],['🔤 Cum se pronunță „through”?','say through'],['💡 Sfaturi de învățare','sfaturi de învățare'],['✨ Lecție '+L,'creează-mi o lecție nouă nivel '+L],['🗣️ Pronunție /θ/','cum pronunț th'],['💬 Conversație liberă','Hello Mara! Let us have a conversation in English.'],['👋 Prezintă-te','prezintă-te pe scurt']];
+    const items=[['🏠 Planul de azi','__home'],['🎓 Începe nivelul '+L,'începem lecțiile de nivelul '+L],['📚 Citește lecția','read'],['🎯 Exersăm pronunția','drill'],['🔤 Cum se pronunță „through”?','say through'],['💡 Sfaturi de învățare','sfaturi de învățare'],['✨ Lecție '+L,'creează-mi o lecție nouă nivel '+L],['🗣️ Pronunție /θ/','cum pronunț th'],['💬 Conversație liberă','Hello Mara! Let us have a conversation in English.'],['👋 Prezintă-te','prezintă-te pe scurt']];
     q.innerHTML=items.map(function(x){return '<button data-a="avpq" data-t="'+esc(x[1])+'">'+esc(x[0])+'</button>'}).join('');
   }
   function open(){
@@ -199929,7 +199929,7 @@ const AVP=(function(){
   function colored(r){return r.ok?'<span style="color:#2ecc71">'+esc(r.w)+'</span>':'<span style="color:#ff6b6b;text-decoration:underline">'+esc(r.w)+'</span>'}
   function coachResult(t){
     if(!sess)return;const it=sess.items[sess.i];if(!it)return;
-    const d=wdiff(it.en,t),sc=d.score;
+    const d=wdiff(it.en,t),sc=d.score;try{window.__tutRec&&window.__tutRec(it.en,sc)}catch(e){}
     S.pronUsed=(S.pronUsed||0)+1;save();try{checkAch()}catch(e){}
     const mine=sess;
     if(sc>=0.85){
@@ -199964,7 +199964,7 @@ const AVP=(function(){
       h='🎉 <b>Am terminat lecția „'+esc(s.l.title)+'”.</b><br>Pronunțate corect din prima: '+s.ok+' din '+n+'.<div class="acts" style="margin-top:6px"><button data-a="open" data-id="'+esc(s.l.id)+'">▶ Testul lecției</button>'+(nx?'<button data-a="avpcoach" data-id="'+esc(nx.id)+'">⏭ Lecția următoare</button>':'')+'<button data-a="avpq" data-t="drill">🎯 Exersăm</button></div>';
       setFb(h);speak([{t:'Am terminat lecția. Ai pronunțat corect '+s.ok+' din '+n+'.',l:'ro'}],null);
     }else{
-      h=(s.ok?'🎉 <b>Corect!</b>':'👍 Gata.')+'<div class="acts" style="margin-top:6px"><button data-a="avpq" data-t="drill">🎯 Alt cuvânt</button></div>';
+      h=s.after?s.after(s):(s.ok?'🎉 <b>Corect!</b>':'👍 Gata.')+'<div class="acts" style="margin-top:6px"><button data-a="avpq" data-t="drill">🎯 Alt cuvânt</button></div>';
       setFb(h);
     }
   }
@@ -200238,7 +200238,7 @@ const AVP=(function(){
       case 'avpslow':slow=!slow;updCtl();break;
       case 'avpcont':cont=!cont;updCtl();if(cont&&!rec&&!AV.isSpeaking())listen(function(t,m){ask(t,m)});break;
       case 'avpstop':stopRec();stopAll();cont=false;updCtl();break;
-      case 'avpq':{const t=el.dataset.t;if(t==='drill'){stopAll();startDrill()}else if(t==='read'){readLesson()}else ask(t.replace(/^say /,'spune '));break}
+      case 'avpq':{const t=el.dataset.t;if(t==='__home'){stopAll();hint();break}if(t==='drill'){stopAll();startDrill()}else if(t==='read'){readLesson()}else ask(t.replace(/^say /,'spune '));break}
       case 'avpendrole':persona=null;stopAll();AVH.length=0;addA('Am încheiat jocul de rol. Bravo! Spune-mi când vrei altul.');break;
       case 'avpcmp':cmp();break;
       case 'avpmine':if(cmpUrl){try{new Audio(cmpUrl).play()}catch(e){}}break;
@@ -200258,7 +200258,9 @@ const AVP=(function(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
   updCtlSafe();
   function updCtlSafe(){}
-  return {open:open,close:close,read:readLesson,ask:ask,practice:startPractice,scenario:scenario,guided:guided};
+  return {open:open,close:close,read:readLesson,ask:ask,practice:startPractice,scenario:scenario,guided:guided,
+  session:function(title,items,after){if(!isOpen())open();stopAll();addQ(title);sess={l:null,items:items,i:0,tries:0,ok:0,phase:'item',after:after,title:title};AV.force();coachItem();return sess},
+  sessOf:function(){return sess},home:function(){stopAll();hint()},isOpen:isOpen,msgBox:function(){return msg}};
 })();
 
 /* ================= EXPERIENȚĂ PREMIUM (gratuită): Acasă, plan zilnic, SRS, test de plasare, jocuri de rol, temă, onboarding ================= */
@@ -202927,6 +202929,218 @@ reply=function(raw){
   }catch(e){}
   return _reply(raw);
 };
+})();
+
+/* ===== LAYOUT MARA: fără înghesuire, butoane mereu vizibile, derulare automată a conversației ===== */
+(function(){
+const st=document.createElement('style');
+st.textContent=
+'#avp{inset:0 auto auto 50%;transform:translateX(-50%);width:100%;height:100vh;height:100dvh;padding-bottom:calc(14px + var(--sab,0px))!important;overflow:hidden}'
++'#avpslot #av.dock{height:min(250px,29vh)!important;max-width:min(240px,74vw)!important}'
++'#avnow{display:none!important}'
++'#avfb{max-height:24vh!important;font-size:13.5px!important;padding:6px 8px!important}'
++'#avpmsg{flex:1 1 0!important;min-height:120px!important;margin:4px 0!important;scroll-behavior:smooth}'
++'.avp-ctl{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;flex:none;scrollbar-width:none}.avp-ctl::-webkit-scrollbar{display:none}'
++'.avp-ctl .fc{flex:none}.avp-mic{width:46px!important;height:46px!important;font-size:21px!important}'
++'.avp-in{flex:none;margin-top:4px!important}.avp-in input{padding:10px 12px!important}'
++'.avp-q{flex:none;padding:4px 0 0!important}'
++'.avp-top{margin-bottom:2px!important}';
+document.head.appendChild(st);
+function boot(){
+  const box=document.getElementById('avpmsg');if(!box||box.__ob)return;box.__ob=1;
+  new MutationObserver(function(ms){
+    let n=null;ms.forEach(function(m){m.addedNodes.forEach(function(x){if(x.nodeType===1&&(x.classList.contains('ava')||x.classList.contains('avq')||x.classList.contains('hint')))n=x})});
+    if(!n)return;
+    setTimeout(function(){
+      try{
+        if(n.classList.contains('ava')&&n.offsetHeight>box.clientHeight*.8){const pv=n.previousElementSibling,tgt=(pv&&pv.classList.contains('avq')&&n.offsetTop-pv.offsetTop+n.offsetHeight<box.clientHeight)?pv:n;box.scrollTop=Math.max(0,tgt.offsetTop-box.offsetTop-4)}
+        else box.scrollTop=box.scrollHeight;
+      }catch(e){}
+    },30);
+  }).observe(box,{childList:true});
+}
+boot();
+const iv=setInterval(function(){boot();if(document.getElementById('avpmsg')&&document.getElementById('avpmsg').__ob)clearInterval(iv)},400);
+})();
+
+/* ===== TUTORE MARA: Planul de azi, sesiuni ghidate, repetarea greșelilor, jocuri de rol, XP/serie, rezumat ===== */
+(function(){
+const DAY=864e5,INT=[0,1,2,4,8,16];
+const T=function(){const t=S.tut=S.tut||{};t.words=t.words||{};t.log=t.log||{};t.scn=t.scn||{};t.goal=t.goal||30;return t};
+const dayNum=function(k){const a=String(k).split('-').map(Number);return Math.floor(Date.UTC(a[0],a[1]-1,a[2])/DAY)};
+const nowN=function(){return dayNum(dayKey(0))};
+const LG=function(){const t=T(),k=dayKey(0);return t.log[k]=t.log[k]||{xp:0,words:0,fixed:0,scenes:0,sess:0}};
+const SOUNDS=[
+ {s:'/θ/',n:'th ca în „think”',w:'think three thank thirty through thumb'.split(' ')},
+ {s:'/ð/',n:'th ca în „this”',w:'this that the then there mother'.split(' ')},
+ {s:'/æ/ și /e/',n:'bad – bed',w:'bad bed man men pan pen'.split(' ')},
+ {s:'/ɪ/ și /iː/',n:'ship – sheep',w:'ship sheep live leave sit seat'.split(' ')},
+ {s:'/w/ și /v/',n:'west – vest',w:'west vest wine vine wet very'.split(' ')},
+ {s:'/r/',n:'r englezesc',w:'red right run road around bread'.split(' ')},
+ {s:'/h/',n:'h expirat',w:'house hand happy hotel behind whole'.split(' ')},
+ {s:'/ŋ/',n:'-ng final',w:'sing long thing morning king young'.split(' ')},
+ {s:'/ʃ/ și /tʃ/',n:'she – chair',w:'she chair cheese shop watch fish'.split(' ')},
+ {s:'/eɪ/',n:'day, name',w:'day name make late great station'.split(' ')}
+];
+let REC=null;
+window.__tutRec=function(en,sc){if(!REC)return;const r=REC[en]||(REC[en]={best:0,n:0});r.best=Math.max(r.best,sc);r.n++};
+const ro1=function(w){try{const r=ROTR(w).t||'';return String(r).split(/[;,\/]/)[0].trim()}catch(e){return ''}};
+const ipa1=function(w){try{return IPAX.ipa(w,S.acc)}catch(e){return ''}};
+function dueList(){const t=T(),n=nowN();return Object.keys(t.words).map(function(k){return t.words[k]}).filter(function(e){return e.next<=n&&(e.miss>0||e.box>0)}).sort(function(a,b){return a.box-b.box})}
+function setStreak(){const t=dayKey(0);if(S.last!==t){S.streak=(S.last===dayKey(-1))?S.streak+1:1;S.last=t}if(S.streak>S.best)S.best=S.streak;S.days[t]=(S.days[t]||0)+1}
+function addXp(n){const l=LG(),before=l.xp;l.xp+=n;S.xp+=n;setStreak();save();
+  if(before<T().goal&&l.xp>=T().goal){try{PRM.confetti()}catch(e){}return true}return false}
+function bar(p){return '<div class="th-bar"><i style="width:'+Math.min(100,Math.round(p*100))+'%"></i></div>'}
+function say(t){try{speakSeq([{t:t,l:'ro'}])}catch(e){}}
+const PRAISE=['Bravo, Marius!','Foarte bine!','Excelent, așa se învață!','Ești pe drumul cel bun!'];
+const zl=function(n){return n+(n===1?' zi':' zile')};
+const pick=function(a){return a[Math.floor(Math.random()*a.length)]};
+
+/* ---------- acasă ---------- */
+function recommend(due){
+  const l=LG();
+  if(due.length)return 'review';
+  if(!l.words)return 'newwords';
+  if(!l.pron)return 'sound';
+  if(!l.scenes)return 'scene';
+  return 'talk';
+}
+window.__tutHome=function(msg){
+  try{
+    if(!msg||typeof PRM==='undefined'||!PRM.SCN)return false;
+    const t=T(),l=LG(),due=dueList(),rec=recommend(due),L=curLevel();
+    const sound=SOUNDS[nowN()%SOUNDS.length];
+    const total=Object.keys(t.words).length;
+    const card=function(id,ic,ti,sub,badge){return '<button class="th-card'+(rec===id?' rec':'')+'" data-tut="'+id+'"><span class="ic">'+ic+'</span><b>'+ti+'</b><small>'+sub+'</small>'+(badge?'<em>'+badge+'</em>':'')+(rec===id?'<u>Recomandat</u>':'')+'</button>'};
+    const msgs={review:'Începem cu '+due.length+(due.length===1?' cuvânt de repetat':' cuvinte de repetat')+', ca să nu le uiți.',newwords:'Azi învățăm 5 cuvinte noi.',sound:'Hai să exersăm sunetul zilei: '+sound.s+'.',scene:'Ai făcut deja cuvintele și pronunția. Încearcă un joc de rol.',talk:'Ai făcut planul de azi! Mai vorbim puțin în engleză?'};
+    msg.innerHTML='<div class="thome">'
+     +'<div class="th-hi">👋 <b>Planul de azi</b><br><span>'+msgs[rec]+'</span></div>'
+     +'<div class="th-stats"><span>🔥 '+zl(curStreak())+'</span><span>⭐ '+S.xp+' XP</span><span>📚 '+total+' cuvinte</span><span>🎓 '+L+'</span></div>'
+     +'<div class="th-goal">'+bar(l.xp/t.goal)+'<small>Obiectiv zilnic: <b>'+Math.min(l.xp,t.goal)+'</b>/'+t.goal+' XP'+(l.xp>=t.goal?' ✅':'')+'</small></div>'
+     +'<div class="th-grid">'
+     +card('review','🔁','Repetă greșelile',due.length?'Cuvintele de recapitulat':'Nimic de repetat 🎉',due.length?String(due.length):'')
+     +card('newwords','🆕','5 cuvinte noi','Nivel '+L+' · cu IPA și traducere','')
+     +card('sound','🎯','Sunetul zilei',sound.s+' · '+sound.n,'')
+     +card('scene','🎭','Joc de rol','Aeroport, hotel, interviu…','')
+     +card('read','📖','Citește lecția','Mara citește, tu urmărești','')
+     +card('talk','💬','Conversație','În engleză, cu corectare','')
+     +'</div>'
+     +'<div class="th-sum"><b>Ce ai făcut azi</b><br>🆕 '+l.words+' cuvinte · 🔁 '+l.fixed+' greșeli îndreptate · 🎭 '+l.scenes+' jocuri de rol · ⭐ '+l.xp+' XP</div>'
+     +'<div class="th-sum mut">Poți și să scrii sau să vorbești liber cu Mara. Butoanele de jos rămân la îndemână.</div>'
+     +'</div>';
+    return true;
+  }catch(e){return false}
+};
+
+/* ---------- sesiuni ---------- */
+function summary(s,kind){
+  const t=T(),n=nowN(),items=s.items||[];
+  let heard=0,pass=0;const missed=[];
+  items.forEach(function(it){
+    const r=REC&&REC[it.en];if(!r)return;heard++;
+    const key=it.en.toLowerCase();let e=t.words[key];
+    if(r.best>=.85){pass++;
+      if(e){const was=e.miss>0&&e.box===0;e.box=Math.min(5,e.box+1);e.next=n+INT[e.box];if(was)LG().fixed++}
+      else{e=t.words[key]={en:it.en,ro:it.ro||'',ipa:it.ipa||'',box:1,next:n+INT[1],miss:0}}
+    }else{missed.push(it);
+      if(e){e.box=0;e.miss=(e.miss||0)+1;e.next=n}else{t.words[key]={en:it.en,ro:it.ro||'',ipa:it.ipa||'',box:0,next:n,miss:1}}
+    }
+  });
+  const ratio=heard?pass/heard:0,stars=!heard?0:ratio>=.9?3:ratio>=.6?2:1;
+  const l=LG();l.sess++;if(kind==='new')l.words+=items.length;
+  if(kind==='scene')l.scenes++;
+  const gain=heard?5+2*pass+(stars===3?5:0):3;
+  const goalHit=addXp(gain);
+  REC=null;
+  const box=AVP.msgBox();
+  if(box){
+    const d=document.createElement('div');d.className='ava th-done';
+    d.innerHTML='<div class="th-stars">'+(heard?'⭐'.repeat(stars)+'☆'.repeat(3-stars):'🎤')+'</div>'
+     +'<b>'+(heard?(stars===3?'Perfect!':stars===2?'Foarte bine!':'Un început bun!'):'Sesiune terminată')+'</b><br>'
+     +(heard?'Ai pronunțat corect <b>'+pass+'</b> din <b>'+heard+'</b>.':'Nu te-am auzit; verifică microfonul sau permisiunea de microfon.')
+     +'<div class="th-xp">+'+gain+' XP'+(goalHit?' · 🎉 Obiectivul zilei atins!':'')+' · 🔥 '+zl(curStreak())+'</div>'+bar(l.xp/t.goal)
+     +(missed.length?'<div class="th-miss"><b>De exersat din nou</b> (revin în repetări):'+missed.map(function(it){return '<div class="mrow"><span><b>'+esc(it.en)+'</b> <i>'+esc(ipa1(it.en))+'</i><br><small>'+esc(it.ro||ro1(it.en))+'</small></span><button data-a="avpq" data-t="say '+esc(it.en)+'">🔊</button></div>'}).join('')+'</div>':'')
+     +'<div class="acts" style="margin-top:8px">'
+     +(missed.length?'<button data-tut="review">🔁 Repetă acum</button>':'')
+     +'<button data-tut="home">🏠 Planul de azi</button></div>';
+    box.appendChild(d);
+  }
+  say(heard?pick(PRAISE):'Gata cu sesiunea.');
+  return '';
+}
+function start(kind,title,items){
+  REC={};
+  AVP.session(title,items,function(s){return summary(s,kind)});
+}
+function itemOf(w){return {en:w.en,ro:(w.ro||ro1(w.en)||'').split(/[;,(]/)[0].trim(),ipa:w.ipa||'',k:/\s/.test(w.en)?'s':'w'}}
+function doReview(){
+  const due=dueList().slice(0,6);
+  if(!due.length){AVP.home();return}
+  start('review','🔁 Repetăm greșelile ('+due.length+')',due.map(itemOf));
+}
+function doNew(){
+  const t=T(),L=curLevel();let ws=[];try{ws=levelWords(L)}catch(e){}
+  const seen=t.words,fresh=[],used={};
+  ws.forEach(function(w){const k=(w.en||'').toLowerCase();if(fresh.length<5&&/^[a-z]+$/.test(k)&&k.length>2&&!seen[k]&&!used[k]&&w.ro){used[k]=1;fresh.push(w)}});
+  if(!fresh.length){AVP.ask('Creează-mi o lecție nouă nivel '+L);return}
+  start('new','🆕 5 cuvinte noi · '+L,fresh.map(itemOf));
+}
+function doSound(){
+  const s=SOUNDS[nowN()%SOUNDS.length];
+  start('sound','🎯 Sunetul zilei '+s.s,s.w.map(function(w){return {en:w,ro:ro1(w),ipa:ipa1(w),k:'w'}}));
+}
+function scenePicker(){
+  const box=AVP.msgBox();if(!box)return;
+  const t=T(),L=curLevel(),order=['A1','A2','B1','B2','C1','C2'];
+  box.innerHTML='<div class="thome"><div class="th-hi">🎭 <b>Joc de rol</b><br><span>Alege situația. Mara joacă celălalt rol; ai traducere și corectare pe parcurs.</span></div><div class="th-grid one">'
+   +PRM.SCN.map(function(s){const n=t.scn[s.id]||0,rc=order.indexOf(s.lv)<=order.indexOf(L)+0;return '<button class="th-card row'+(rc&&!n?' rec':'')+'" data-tut="scn" data-id="'+s.id+'"><span class="ic">'+s.i+'</span><b>'+esc(s.t)+'</b><small>'+s.lv+(n?' · făcut de '+n+'×':'')+'</small></button>'}).join('')
+   +'</div><div class="acts"><button data-tut="home">⬅ Înapoi</button></div></div>';
+  box.scrollTop=0;
+}
+function doScene(id){
+  const s=PRM.SCN.find(function(x){return x.id===id});if(!s)return;
+  const t=T();t.scn[id]=(t.scn[id]||0)+1;save();
+  if(typeof claudeOn==='function'&&claudeOn()){window.__tutScene=id;AVP.scenario(s);LG().scenes++;save()}
+  else if(window.__DLG&&window.__DLG[id]){
+    REC={};AVP.guided(s,window.__DLG[id]);const ss=AVP.sessOf();if(ss){ss.after=function(x){return summary(x,'scene')}}
+  }else AVP.scenario(s);
+}
+document.addEventListener('click',function(e){
+  const el=e.target.closest?e.target.closest('[data-tut]'):null;
+  if(el){
+    const a=el.dataset.tut;
+    try{
+      if(a==='home')AVP.home();
+      else if(a==='review')doReview();
+      else if(a==='newwords')doNew();
+      else if(a==='sound')doSound();
+      else if(a==='scene')scenePicker();
+      else if(a==='scn')doScene(el.dataset.id);
+      else if(a==='read')AVP.read();
+      else if(a==='talk')AVP.ask('Hello Mara! Let us have a conversation in English.');
+    }catch(x){}
+    return;
+  }
+  const end=e.target.closest?e.target.closest('[data-a="avpendrole"]'):null;
+  if(end&&window.__tutScene){window.__tutScene=null;const g=addXp(10);try{PRM.confetti()}catch(x){}setTimeout(function(){const b=AVP.msgBox();if(b){const d=document.createElement('div');d.className='ava th-done';d.innerHTML='<b>Joc de rol terminat!</b> +10 XP'+(g?' · 🎉 Obiectivul zilei atins!':'')+'<div class="acts" style="margin-top:8px"><button data-tut="home">🏠 Planul de azi</button></div>';b.appendChild(d)}},50)}
+},true);
+/* ---------- stil ---------- */
+const st=document.createElement('style');st.textContent=
+'.thome{padding:2px 0}.th-hi{font-size:17px;line-height:1.35;margin:2px 2px 8px}.th-hi span{font-size:14.5px;color:var(--mut)}'
++'.th-stats{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}.th-stats::-webkit-scrollbar{display:none}.th-stats span{flex:none;background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:4px 10px;font-size:13px;font-weight:600}'
++'.th-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:6px 0 3px}.th-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#2ecc71,#ffd166);transition:width .5s}'
++'.th-goal small,.th-sum{font-size:13px;color:var(--mut)}.th-goal{margin-bottom:10px}'
++'.th-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.th-grid.one{grid-template-columns:1fr}'
++'.th-card{position:relative;text-align:left;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:16px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:86px;font:inherit}'
++'.th-card .ic{font-size:24px}.th-card b{font-size:15px}.th-card small{font-size:12.5px;color:var(--mut);line-height:1.3}'
++'.th-card em{position:absolute;top:8px;right:10px;background:var(--acc);color:#fff;border-radius:99px;font-style:normal;font-size:12px;font-weight:700;padding:1px 8px}'
++'.th-card u{position:absolute;bottom:8px;right:10px;text-decoration:none;font-size:11px;font-weight:700;color:#ffd166}'
++'.th-card.rec{border-color:#ffd166;box-shadow:0 0 0 1px rgba(255,209,102,.5)}.th-card.row{flex-direction:row;align-items:center;gap:10px;min-height:0}.th-card.row small{margin-left:auto}'
++'.th-sum{margin-top:10px;line-height:1.5}'
++'.th-done{text-align:center}.th-stars{font-size:30px;letter-spacing:4px}.th-xp{margin:6px 0 2px;font-weight:700;color:#ffd166}'
++'.th-miss{text-align:left;margin-top:8px;font-size:14px}.th-miss .mrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px dashed var(--line)}.th-miss i{color:var(--ipa);font-style:normal}.th-miss button{border:1px solid var(--line);background:var(--bg);color:var(--txt);border-radius:99px;padding:6px 12px;cursor:pointer}'
++'.th-done .acts{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.th-done .acts button,.thome .acts button{padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--txt);cursor:pointer;font-size:14px}';
+document.head.appendChild(st);
 })();
 
 </script>
