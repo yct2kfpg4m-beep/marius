@@ -202641,6 +202641,7 @@ document.addEventListener('click',function(e){const el=e.target.closest?e.target
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){const x=document.querySelector('#shdlg');if(x){x.remove();return}const b=document.querySelector('#avp [data-a="avpclose"],#ov.open .ox,#run.show [data-a="close"]');if(b)b.click()}});
   /* Distribuie / Exportă */
   function dlg(){
+    if(window.__exportDlg){window.__exportDlg();return}
     let d=document.getElementById('shdlg');if(d)d.remove();
     d=document.createElement('div');d.id='shdlg';
     d.innerHTML='<div><h3 style="margin:0 0 6px">📤 Linkul aplicației</h3><div class="mut" style="font-size:13px">Versiunea independentă (merge fără cont Claude, inclusiv offline după prima deschidere).</div><input id="shurl" readonly value="'+URL_APP+'"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" id="shcopy">📋 Copiază</button><button class="btn sm" id="shsend">📤 Trimite</button><button class="btn sm ghost" id="shopen">🔗 Deschide</button><button class="btn sm ghost" id="shx">Închide</button></div><div class="mut" style="font-size:12px;margin-top:10px">Linkul pentru ultima versiune se actualizează când încarci fișierul nou în GitHub (repository „marius”).</div></div>';
@@ -203025,6 +203026,7 @@ window.__tutHome=function(msg){
      +card('read','📖','Citește lecția','Mara citește, tu urmărești','')
      +card('talk','💬','Conversație','În engleză, cu corectare','')
      +'</div>'
+     +'<button class="th-card row" data-tut="export" style="width:100%;margin-top:8px"><span class="ic">📤</span><b>Exportă în PDF / Word / Excel</b></button>'
      +'<div class="th-sum"><b>Ce ai făcut azi</b><br>🆕 '+l.words+' cuvinte · 🔁 '+l.fixed+' greșeli îndreptate · 🎭 '+l.scenes+' jocuri de rol · ⭐ '+l.xp+' XP</div>'
      +'<div class="th-sum mut">Poți și să scrii sau să vorbești liber cu Mara. Butoanele de jos rămân la îndemână.</div>'
      +'</div>';
@@ -203116,6 +203118,7 @@ document.addEventListener('click',function(e){
       else if(a==='sound')doSound();
       else if(a==='scene')scenePicker();
       else if(a==='scn')doScene(el.dataset.id);
+      else if(a==='export'){if(window.__expDocs)window.__expDocs()}
       else if(a==='read')AVP.read();
       else if(a==='talk')AVP.ask('Hello Mara! Let us have a conversation in English.');
     }catch(x){}
@@ -203143,6 +203146,537 @@ const st=document.createElement('style');st.textContent=
 document.head.appendChild(st);
 })();
 
+/* ===== EXPORT: lecții / cuvinte / progres / dialoguri → PDF, Word (.docx), Excel (.xlsx) ===== */
+(function(){
+const enc=new TextEncoder();
+/* ---------- ZIP (stocat, fără compresie) ---------- */
+const CRC=(function(){const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+async function deflate(d){
+  try{if(typeof CompressionStream==='undefined')return null;
+    const cs=new CompressionStream('deflate-raw'),w=cs.writable.getWriter();w.write(d);w.close();
+    const buf=await new Response(cs.readable).arrayBuffer();return new Uint8Array(buf)}catch(e){return null}
+}
+async function zip(files){
+  const parts=[],cd=[];let off=0;
+  const u16=function(v){return [v&255,(v>>8)&255]},u32=function(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255]};
+  for(const f of files){
+    const nm=enc.encode(f.name),d=typeof f.data==='string'?enc.encode(f.data):f.data,c=crc32(d);
+    let z=d.length>200?await deflate(d):null,meth=8;if(!z||z.length>=d.length){z=d;meth=0}
+    const lh=new Uint8Array([0x50,0x4b,3,4,20,0,0,8].concat(u16(meth),[0,0,0x21,0],u32(c),u32(z.length),u32(d.length),u16(nm.length),[0,0]));
+    parts.push(lh,nm,z);
+    cd.push(new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,8].concat(u16(meth),[0,0,0x21,0],u32(c),u32(z.length),u32(d.length),u16(nm.length),[0,0,0,0,0,0,0,0,0,0,0,0],u32(off))),nm);
+    off+=lh.length+nm.length+z.length;
+  }
+  let cdLen=0;cd.forEach(function(x){cdLen+=x.length});
+  const eocd=new Uint8Array([0x50,0x4b,5,6,0,0,0,0].concat(u16(files.length),u16(files.length),u32(cdLen),u32(off),[0,0]));
+  return new Blob(parts.concat(cd,[eocd]));
+}
+const X=function(s){return String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')};
+/* ---------- conținut ---------- */
+const plain=function(s){return String(s||'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/\[\[(.+?)\]\]/g,'$1').replace(/`/g,'')};
+function allL(){const a=LESSONS.slice(),seen={};a.forEach(function(l){seen[l.id]=1});try{(S.gen||[]).forEach(function(l){if(l&&l.id&&!seen[l.id]){seen[l.id]=1;a.push(l)}})}catch(e){}try{if(R&&R.les&&!seen[R.les.id])a.push(R.les)}catch(e){}return a}
+function curLes(){try{return (R&&R.les)||null}catch(e){return null}}
+const dateRo=function(n){const d=new Date(n*864e5);return d.getUTCDate()+'.'+(d.getUTCMonth()+1)+'.'+d.getUTCFullYear()};
+function lessonBlocks(l,parts,out,sheets){
+  out.push({k:'h1',t:l.title+'  ·  '+l.lvl+'  ·  '+l.cat});
+  if(parts.intro&&l.intro){plain(l.intro).split(/\n+/).forEach(function(ln){ln=ln.trim();if(!ln)return;if(/^[•\-–]\s*/.test(ln))out.push({k:'li',t:ln.replace(/^[•\-–]\s*/,'')});else out.push({k:'p',t:ln})});
+    sheets.lessons.rows.push([l.id,l.lvl,l.cat,l.title,plain(l.intro).replace(/\n+/g,' ')])}
+  if(parts.words&&l.words&&l.words.length){out.push({k:'h2',t:'Cuvinte'});out.push({k:'tbl',head:['Engleză','Pronunție (IPA)','Română'],w:[.3,.25,.45],cls:['b','ipa','']
+    ,rows:l.words.map(function(w){return [w.en,w.ipa||'',w.ro||'']})});
+    l.words.forEach(function(w){sheets.words.rows.push([l.title,l.lvl,w.en,w.ipa||'',w.ro||''])})}
+  if(parts.sents&&l.sents&&l.sents.length){out.push({k:'h2',t:'Propoziții'});out.push({k:'tbl',head:['Engleză','Română'],w:[.5,.5],cls:['b',''],rows:l.sents.map(function(s){return [s[0],s[1]||'']})});
+    l.sents.forEach(function(s){sheets.sents.rows.push([l.title,l.lvl,s[0],s[1]||''])})}
+  if(parts.quiz&&l.quiz&&l.quiz.length){out.push({k:'h2',t:'Quiz (cu răspunsuri)'});
+    l.quiz.forEach(function(q,i){out.push({k:'li',t:(i+1)+'. '+q.q+'  →  '+q.a+(q.x?'   ('+q.x+')':'')});
+      sheets.quiz.rows.push([l.title,l.lvl,q.q,q.a,(q.w||[]).join(' / '),q.x||''])})}
+  out.push({k:'sp'});
+}
+function newSheets(){return {lessons:{name:'Lecții',head:['ID','Nivel','Categorie','Titlu','Explicație'],rows:[],w:[8,7,14,34,90]},
+ words:{name:'Cuvinte',head:['Lecție','Nivel','Engleză','IPA','Română'],rows:[],w:[34,7,22,22,34]},
+ sents:{name:'Propoziții',head:['Lecție','Nivel','Engleză','Română'],rows:[],w:[34,7,55,55]},
+ quiz:{name:'Quiz',head:['Lecție','Nivel','Întrebare','Răspuns corect','Variante greșite','Explicație'],rows:[],w:[34,7,40,18,30,50]}}}
+function build(sel){
+  const blocks=[],sh=newSheets();let title='Engleză Marius',fname='lectii',sheets=[];
+  if(sel.what==='lessons'){
+    const AL=allL();const ls=sel.ids.map(function(id){return AL.find(function(x){return x.id===id})}).filter(Boolean);
+    title=ls.length===1?ls[0].title:'Lecții Engleză Marius ('+ls.length+')';fname=ls.length===1?ls[0].title.replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'lectie':'lectii-'+ls.length;
+    ls.forEach(function(l){lessonBlocks(l,sel.parts,blocks,sh)});
+    sheets=[sh.lessons,sh.words,sh.sents,sh.quiz].filter(function(s){return s.rows.length});
+  }else if(sel.what==='mywords'){
+    const t=S.tut&&S.tut.words||{},n=Math.floor(Date.now()/864e5);title='Cuvintele mele';fname='cuvintele-mele';
+    const rows=Object.keys(t).map(function(k){return t[k]}).sort(function(a,b){return (a.box||0)-(b.box||0)}).map(function(e){return [e.en,e.ipa||'',e.ro||'',(e.next<=n&&(e.miss>0||e.box>0))?'de repetat':(e.box>=3?'stăpânit':'în învățare'),e.miss||0,dateRo(e.next||n)]});
+    blocks.push({k:'h1',t:'Cuvintele mele'});
+    if(!rows.length)blocks.push({k:'p',t:'Nu ai încă cuvinte salvate. Fă o sesiune „5 cuvinte noi” cu Mara și ele apar aici.'});
+    else blocks.push({k:'tbl',head:['Engleză','IPA','Română','Stare','Greșeli','Următoarea repetare'],w:[.2,.18,.24,.14,.09,.15],cls:['b','ipa','','','',''],rows:rows});
+    sheets=[{name:'Cuvintele mele',head:['Engleză','IPA','Română','Stare','Greșeli','Următoarea repetare'],rows:rows,w:[22,22,30,14,9,18]}];
+  }else if(sel.what==='progress'){
+    title='Progresul meu';fname='progres';
+    const per=LEVELS.map(function(L){const s=lvlStats(L.id);return [L.id+' · '+L.name,s.done,s.total]});
+    const days=Object.keys(S.days||{}).sort().slice(-30).map(function(k){return [k,S.days[k]]});
+    blocks.push({k:'h1',t:'Progresul meu'});
+    blocks.push({k:'tbl',head:['Indicator','Valoare'],w:[.6,.4],cls:['b',''],rows:[['XP total',S.xp],['Serie curentă (zile)',curStreak()],['Cea mai lungă serie',S.best||0],['Lecții terminate',doneCount()],['Nivel recomandat',curLevel()]]});
+    blocks.push({k:'h2',t:'Pe niveluri'});blocks.push({k:'tbl',head:['Nivel','Terminate','Total'],w:[.6,.2,.2],cls:['b','',''],rows:per});
+    if(days.length){blocks.push({k:'h2',t:'Activitate recentă'});blocks.push({k:'tbl',head:['Data','Lecții'],w:[.6,.4],cls:['b',''],rows:days})}
+    sheets=[{name:'Indicatori',head:['Indicator','Valoare'],rows:[['XP total',S.xp],['Serie curentă',curStreak()],['Cea mai lungă serie',S.best||0],['Lecții terminate',doneCount()],['Nivel recomandat',curLevel()]],w:[28,14]},{name:'Niveluri',head:['Nivel','Terminate','Total'],rows:per,w:[28,12,10]},{name:'Activitate',head:['Data','Lecții'],rows:days,w:[16,10]}];
+  }else if(sel.what==='screen'||sel.what==='basket'){
+    const items=sel.what==='screen'?[sel.cap]:sel.basket;
+    title=items.length===1?items[0].title:'Colecția mea ('+items.length+' părți)';fname=(items.length===1?items[0].title:'colectie').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'ecran';
+    items.forEach(function(it,i){if(items.length>1)blocks.push({k:'h1',t:it.title});it.blocks.forEach(function(b){blocks.push(b)});blocks.push({k:'sp'})});
+    sheets=blocksToSheets({blocks:blocks});
+  }else if(sel.what==='chat'){
+    title='Conversația cu Mara';fname='conversatie-mara';const b=document.getElementById('avpmsg');
+    const it=b?[].slice.call(b.children).filter(function(x){return x.classList.contains('avq')||x.classList.contains('ava')}):[];
+    const rows=it.map(function(x){return [x.classList.contains('avq')?'Tu':'Mara',x.innerText.replace(/🔊|ɪpa|🇷🇴 Traduce/g,'').replace(/\n{2,}/g,'\n').trim()]}).filter(function(r){return r[1]});
+    blocks.push({k:'h1',t:'Conversația cu Mara'});
+    if(!rows.length)blocks.push({k:'p',t:'Nu există încă o conversație. Deschide-o pe Mara, scrie-i ceva, apoi exportă din nou.'});
+    else blocks.push({k:'tbl',head:['Cine','Text'],w:[.14,.86],cls:['b',''],rows:rows});
+    sheets=[{name:'Conversație',head:['Cine','Text'],rows:rows,w:[10,110]}];
+  }else if(sel.what==='dialogs'){
+    title='Dialoguri (jocuri de rol)';fname='dialoguri';const D=window.__DLG||{},rows=[];
+    blocks.push({k:'h1',t:'Dialoguri (jocuri de rol)'});
+    PRM.SCN.forEach(function(s){const d=D[s.id];if(!d)return;blocks.push({k:'h2',t:s.t+' · '+s.lv});
+      blocks.push({k:'tbl',head:['Cine','Engleză','Română'],w:[.12,.46,.42],cls:['','b',''],rows:d.map(function(x){return [x[0]==='M'?'Mara':'Tu',x[1],x[2]||'']})});
+      d.forEach(function(x){rows.push([s.t,x[0]==='M'?'Mara':'Tu',x[1],x[2]||''])})});
+    sheets=[{name:'Dialoguri',head:['Situație','Cine','Engleză','Română'],rows:rows,w:[24,8,55,55]}];
+  }
+  return {title:title,fname:fname,blocks:blocks,sheets:sheets};
+}
+/* ---------- DOCX ---------- */
+function docx(m){
+  const P=function(t,style,extra){return '<w:p>'+(style?'<w:pPr><w:pStyle w:val="'+style+'"/></w:pPr>':'')+'<w:r>'+(extra||'')+'<w:t xml:space="preserve">'+X(t)+'</w:t></w:r></w:p>'};
+  let b='<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t xml:space="preserve">'+X(m.title)+'</w:t></w:r></w:p>'+P('Engleză Marius · '+new Date().toLocaleDateString('ro-RO'),'Sub');
+  m.blocks.forEach(function(k){
+    if(k.k==='h1')b+=P(k.t,'Heading1');else if(k.k==='h2')b+=P(k.t,'Heading2');else if(k.k==='p')b+=P(k.t,'');else if(k.k==='sp')b+='<w:p/>';
+    else if(k.k==='li')b+='<w:p><w:pPr><w:ind w:left="360" w:hanging="240"/></w:pPr><w:r><w:t xml:space="preserve">• '+X(k.t)+'</w:t></w:r></w:p>';
+    else if(k.k==='tbl'){
+      const tot=9638,cw=k.w.map(function(r){return Math.round(r*tot)});
+      b+='<w:tbl><w:tblPr><w:tblW w:w="'+tot+'" w:type="dxa"/><w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(function(s){return '<w:'+s+' w:val="single" w:sz="4" w:space="0" w:color="B7C0D0"/>'}).join('')+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+cw.map(function(w){return '<w:gridCol w:w="'+w+'"/>'}).join('')+'</w:tblGrid>';
+      const row=function(cells,head){return '<w:tr>'+(head?'<w:trPr><w:tblHeader/></w:trPr>':'')+cells.map(function(c,i){
+        const cls=head?'h':(k.cls&&k.cls[i])||'';
+        const rpr=head?'<w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr>':cls==='b'?'<w:rPr><w:b/></w:rPr>':cls==='ipa'?'<w:rPr><w:color w:val="8A4B00"/></w:rPr>':'';
+        return '<w:tc><w:tcPr><w:tcW w:w="'+cw[i]+'" w:type="dxa"/>'+(head?'<w:shd w:val="clear" w:color="auto" w:fill="1B3A6B"/>':'')+'</w:tcPr><w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r>'+rpr+'<w:t xml:space="preserve">'+X(c)+'</w:t></w:r></w:p></w:tc>'}).join('')+'</w:tr>'};
+      b+=row(k.head,true)+k.rows.map(function(r){return row(r,false)}).join('')+'</w:tbl><w:p/>';
+    }
+  });
+  b+='<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+  const NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const sty='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri" w:eastAsia="Calibri"/><w:sz w:val="22"/><w:lang w:val="ro-RO"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
+   +'<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'
+   +'<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="60"/></w:pPr><w:rPr><w:b/><w:color w:val="1B3A6B"/><w:sz w:val="44"/></w:rPr></w:style>'
+   +'<w:style w:type="paragraph" w:styleId="Sub"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="240"/></w:pPr><w:rPr><w:color w:val="6B7280"/><w:sz w:val="20"/></w:rPr></w:style>'
+   +'<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1B3A6B"/><w:sz w:val="32"/></w:rPr></w:style>'
+   +'<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="200" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="C0263F"/><w:sz w:val="26"/></w:rPr></w:style></w:styles>';
+  return zip([
+   {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'},
+   {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+   {name:'word/_rels/document.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+   {name:'word/styles.xml',data:sty},
+   {name:'word/document.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document '+NS+'><w:body>'+b+'</w:body></w:document>'}
+  ]);
+}
+/* ---------- XLSX ---------- */
+function xlsx(m){
+  const sheets=m.sheets.length?m.sheets:[{name:'Date',head:['Info'],rows:[['Nimic de exportat']],w:[30]}];
+  const col=function(i){let s='';i++;while(i>0){const r=(i-1)%26;s=String.fromCharCode(65+r)+s;i=Math.floor((i-1)/26)}return s};
+  const used={};const names=sheets.map(function(s){let n=String(s.name).replace(/[\\\/?*\[\]:]/g,'-').slice(0,31)||'Foaie';let k=n,i=2;while(used[k.toLowerCase()]){k=n.slice(0,28)+' '+i++}used[k.toLowerCase()]=1;return k});
+  const cell=function(v,r,c,st){const ref=col(c)+r;if(typeof v==='number'&&isFinite(v))return '<c r="'+ref+'"'+(st?' s="'+st+'"':'')+'><v>'+v+'</v></c>';return '<c r="'+ref+'" t="inlineStr"'+(st?' s="'+st+'"':'')+'><is><t xml:space="preserve">'+X(v)+'</t></is></c>'};
+  const files=[];
+  sheets.forEach(function(s,i){
+    let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+s.head.map(function(_,j){return '<col min="'+(j+1)+'" max="'+(j+1)+'" width="'+((s.w&&s.w[j])||20)+'" customWidth="1"/>'}).join('')+'</cols><sheetData>';
+    x+='<row r="1">'+s.head.map(function(h,j){return cell(h,1,j,1)}).join('')+'</row>';
+    s.rows.forEach(function(r,ri){x+='<row r="'+(ri+2)+'">'+r.map(function(v,j){return cell(v,ri+2,j,2)}).join('')+'</row>'});
+    x+='</sheetData></worksheet>';
+    files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:x});
+  });
+  const ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map(function(_,i){return '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'}).join('')+'</Types>';
+  const wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+names.map(function(n,i){return '<sheet name="'+X(n)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>'}).join('')+'</sheets></workbook>';
+  const wr='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map(function(_,i){return '<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>'}).join('')+'<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  const sty='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1B3A6B"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  return zip([{name:'[Content_Types].xml',data:ct},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},{name:'xl/workbook.xml',data:wb},{name:'xl/_rels/workbook.xml.rels',data:wr},{name:'xl/styles.xml',data:sty}].concat(files));
+}
+/* ---------- PDF (pagini randate, text vizibil peste tot, inclusiv IPA) ---------- */
+async function pdf(m,progress){
+  const W=1240,H=1754,M=110,FONT='"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","DejaVu Sans",sans-serif';
+  const jp=[],pend=[];let cv,ctx,y,pn=0;const small=!!m.small,IW=small?820:W,IH=small?1160:H;
+  const encPage=function(c){return new Promise(function(r){let t=c;if(small){t=document.createElement('canvas');t.width=IW;t.height=IH;t.getContext('2d').drawImage(c,0,0,IW,IH)}t.toBlob(function(b){c.width=1;if(t!==c)t.width=1;r(b)},'image/jpeg',small?0.6:0.85)})};
+  const settle=async function(){const rest=pend.slice(jp.length);if(rest.length){const r=await Promise.all(rest);r.forEach(function(x){jp.push(x)})}};
+  function newPage(){
+    if(cv)pend.push(encPage(cv));
+    cv=document.createElement('canvas');cv.width=W;cv.height=H;ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.textBaseline='alphabetic';
+    pn++;y=M;ctx.fillStyle='#8a94a6';ctx.font='22px '+FONT;ctx.textAlign='center';ctx.fillText('Engleză Marius · pagina '+pn,W/2,H-50);ctx.textAlign='left';
+    if(progress)progress(pn);
+  }
+  const wrap=function(t,w,font){ctx.font=font;const out=[];String(t).split('\n').forEach(function(par){const ws=par.split(/\s+/);let ln='';ws.forEach(function(wd){const tt=ln?ln+' '+wd:wd;if(ctx.measureText(tt).width>w&&ln){out.push(ln);ln=wd}else ln=tt});out.push(ln)});return out};
+  const need=function(h){if(y+h>H-110)newPage()};
+  newPage();
+  ctx.fillStyle='#1b3a6b';ctx.font='bold 56px '+FONT;wrap(m.title,W-2*M,ctx.font).forEach(function(l){ctx.fillText(l,M,y+50);y+=64});
+  ctx.fillStyle='#6b7280';ctx.font='26px '+FONT;ctx.fillText('Engleză Marius · '+new Date().toLocaleDateString('ro-RO'),M,y+30);y+=70;
+  for(const k of m.blocks){
+    if(pend.length-jp.length>2)await settle();
+    if(k.k==='h1'){need(120);y+=26;ctx.fillStyle='#1b3a6b';ctx.font='bold 42px '+FONT;wrap(k.t,W-2*M,ctx.font).forEach(function(l){need(54);ctx.fillText(l,M,y+38);y+=54});ctx.fillStyle='#1b3a6b';ctx.fillRect(M,y+4,W-2*M,3);y+=24}
+    else if(k.k==='h2'){need(90);y+=14;ctx.fillStyle='#c0263f';ctx.font='bold 32px '+FONT;ctx.fillText(k.t,M,y+30);y+=52}
+    else if(k.k==='p'||k.k==='li'){ctx.fillStyle='#111827';const f='28px '+FONT,ind=k.k==='li'?34:0;wrap(k.t,W-2*M-ind,f).forEach(function(l,i){need(42);ctx.font=f;ctx.fillStyle='#111827';if(k.k==='li'&&i===0)ctx.fillText('•',M+6,y+30);ctx.fillText(l,M+ind,y+30);y+=42});y+=8}
+    else if(k.k==='sp'){y+=20}
+    else if(k.k==='tbl'){
+      const tw=W-2*M,cw=k.w.map(function(r){return r*tw});
+      const drawRow=function(cells,head,ri){
+        const fonts=cells.map(function(_,i){const c=head?'h':(k.cls&&k.cls[i])||'';return (c==='b'||head?'bold ':'')+'26px '+FONT});
+        const lines=cells.map(function(c,i){return wrap(c,cw[i]-24,fonts[i])});
+        const h=Math.max.apply(null,lines.map(function(a){return a.length}))*36+22;
+        need(h);
+        if(head){ctx.fillStyle='#1b3a6b';ctx.fillRect(M,y,tw,h)}else if(ri%2){ctx.fillStyle='#f3f6fb';ctx.fillRect(M,y,tw,h)}
+        let x=M;
+        cells.forEach(function(c,i){const cl=head?'h':(k.cls&&k.cls[i])||'';ctx.font=fonts[i];ctx.fillStyle=head?'#fff':cl==='ipa'?'#8a4b00':'#111827';lines[i].forEach(function(l,li){ctx.fillText(l,x+12,y+34+li*36)});x+=cw[i]});
+        ctx.fillStyle='#d5dbe6';ctx.fillRect(M,y+h-1,tw,1);y+=h;
+      };
+      drawRow(k.head,true,0);k.rows.forEach(function(r,i){if(y+60>H-110){newPage();drawRow(k.head,true,0)}drawRow(r.map(String),false,i)});y+=24;
+    }
+  }
+  pend.push(encPage(cv));await settle();
+  const objs=[],bufs=[];let len=0;
+  const put=function(x){if(x instanceof Blob){bufs.push(x);len+=x.size;return}const u=typeof x==='string'?enc.encode(x):x;bufs.push(u);len+=u.length};
+  const offs=[];
+  put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const n=jp.length;
+  const pageObjId=function(i){return 3+i*3},contId=function(i){return 4+i*3},imgId=function(i){return 5+i*3};
+  offs[1]=len;put('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
+  offs[2]=len;put('2 0 obj\n<</Type/Pages/Count '+n+'/Kids['+jp.map(function(_,i){return pageObjId(i)+' 0 R'}).join(' ')+']>>\nendobj\n');
+  for(let i=0;i<n;i++){
+    const blob=jp[i];
+    offs[pageObjId(i)]=len;put(pageObjId(i)+' 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 595.28 841.89]/Resources<</XObject<</Im0 '+imgId(i)+' 0 R>>>>/Contents '+contId(i)+' 0 R>>\nendobj\n');
+    const cs='q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+    offs[contId(i)]=len;put(contId(i)+' 0 obj\n<</Length '+cs.length+'>>\nstream\n'+cs+'\nendstream\nendobj\n');
+    offs[imgId(i)]=len;put(imgId(i)+' 0 obj\n<</Type/XObject/Subtype/Image/Width '+IW+'/Height '+IH+'/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length '+blob.size+'>>\nstream\n');put(blob);put('\nendstream\nendobj\n');
+  }
+  const total=2+3*n,xr=len;
+  let x='xref\n0 '+(total+1)+'\n0000000000 65535 f \n';for(let i=1;i<=total;i++)x+=String(offs[i]).padStart(10,'0')+' 00000 n \n';
+  put(x+'trailer\n<</Size '+(total+1)+'/Root 1 0 R/Info<</Title('+m.title.replace(/[^\x20-\x7E]/g,'').replace(/[()\\]/g,'')+')>>>>\nstartxref\n'+xr+'\n%%EOF');
+  return new Blob(bufs,{type:'application/pdf'});
+}
+/* ---------- salvare ---------- */
+const MIME={pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
+async function deliver(blob,name){
+  try{if(window.claude&&claude.use){const d=await claude.use('downloads');if(d){await d.save({filename:name,data:blob});return 'saved'}}}catch(e){if(e&&e.code==='declined')return 'declined';if(e&&e.code==='rate_limited'){await new Promise(function(r){setTimeout(r,3500)});try{const d2=await claude.use('downloads');if(d2){await d2.save({filename:name,data:blob});return 'saved'}}catch(e2){if(e2&&e2.code==='declined')return 'declined'}}}
+  try{const f=new File([blob],name,{type:blob.type||MIME[name.split('.').pop()]});
+    if(navigator.canShare&&navigator.canShare({files:[f]})&&/iPhone|iPad|Android/i.test(navigator.userAgent)){await navigator.share({files:[f],title:name});return 'saved'}}catch(e){if(e&&e.name==='AbortError')return 'declined'}
+  try{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},4000);return 'saved'}catch(e){}
+  return 'fail';
+}
+
+/* ---------- CAPTURĂ GENERALĂ: orice ecran / zonă din aplicație → blocuri ---------- */
+const SKIPSEL='script,style,svg,canvas,input,select,textarea,audio,video,noscript,iframe,#av,#avfab,#fsub,#xpdlg,#xpick,#xbtn,#toast,nav,.rh,.th-stats,.th-bar,[aria-hidden="true"]';
+const INL=new Set(['SPAN','B','I','EM','STRONG','SMALL','A','U','CODE','SUP','SUB','MARK','BR','FONT','ABBR','S']);
+const norm=function(t){return String(t).replace(/ⓘ/g,'').replace(/[ \t\r\f\u00a0]+/g,' ').replace(/ *\n */g,'\n').replace(/\n{3,}/g,'\n\n').replace(/ ([,.;:!?)\]])/g,'$1').replace(/([(\[]) /g,'$1').trim()};
+const vis=function(el){try{if(!el.getClientRects().length)return false;const cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'}catch(e){return true}};
+const skipped=function(el){try{return el.matches(SKIPSEL)}catch(e){return false}};
+function inl(el,ctx){
+  let t='';
+  el.childNodes.forEach(function(c){
+    if(c.nodeType===3){t+=c.nodeValue;return}
+    if(c.nodeType!==1||skipped(c)||!vis(c))return;
+    if(c.tagName==='BR'){t+='\n';return}
+    if(c.tagName==='BUTTON'&&!ctx.btn)return;
+    const x=inl(c,ctx);if(x)t+=(INL.has(c.tagName)?' ':'\n')+x+(INL.has(c.tagName)?' ':'\n');
+  });
+  return norm(t);
+}
+function hasBlock(el,ctx){
+  for(const c of el.children){if(skipped(c)||!vis(c))continue;if(!INL.has(c.tagName)&&!(c.tagName==='BUTTON'&&!ctx.btn))return true}
+  return false;
+}
+const okBtn=function(t){return t.length>2&&!/^(ɪpa|🇷🇴 Traduce|Traduce|🔊|🐢)$/i.test(t)&&!/^(Continuă|Verifică|Repetă|Închide|Mai târziu|Stop|Alt cuvânt|⏮|⏭)/i.test(t)&&/[A-Za-zăâîșț0-9]/.test(t)};
+function walk(el,out,ctx){
+  if(el.nodeType!==1||skipped(el)||!vis(el))return;
+  const tag=el.tagName;
+  if(/^H[1-6]$/.test(tag)){const t=inl(el,ctx);if(t)out.push({k:/^H[12]$/.test(tag)?'h1':'h2',t:t});return}
+  if(tag==='TABLE'){
+    const rows=[];[].forEach.call(el.rows,function(r){const c=[].map.call(r.cells,function(x){return inl(x,ctx)});if(c.some(Boolean))rows.push(c)});
+    if(rows.length){const n=Math.max.apply(null,rows.map(function(r){return r.length}));rows.forEach(function(r){while(r.length<n)r.push('')});
+      const hd=el.querySelector('th')?rows.shift():rows[0].map(function(_,i){return 'Col '+(i+1)});out.push({k:'tbl',head:hd,rows:rows,w:hd.map(function(){return 1/hd.length}),cls:[]})}
+    return;
+  }
+  if(tag==='LI'){const t=inl(el,ctx);if(t)out.push({k:'li',t:t});return}
+  if(tag==='BUTTON'){if(ctx.btn){const t=inl(el,ctx);if(okBtn(t))out.push({k:'li',t:t})}return}
+  if(el.classList.contains('avq')){const t=inl(el,ctx);if(t)out.push({k:'p',t:'Tu: '+t});return}
+  if(el.classList.contains('ava')){out.push({k:'h2',t:'Mara'})}
+  if(!hasBlock(el,ctx)){const t=inl(el,ctx);if(t)out.push({k:'p',t:t});return}
+  let run='';
+  const flush=function(){const t=norm(run);if(t)out.push({k:'p',t:t});run=''};
+  el.childNodes.forEach(function(c){
+    if(c.nodeType===3){run+=c.nodeValue;return}
+    if(c.nodeType!==1||skipped(c)||!vis(c))return;
+    if(INL.has(c.tagName)){run+=(c.tagName==='BR'?'\n':' '+inl(c,ctx)+' ');return}
+    flush();walk(c,out,ctx);
+  });
+  flush();
+}
+function toBlocks(roots,ctx){
+  const out=[];roots.forEach(function(r){if(r)walk(r,out,ctx)});
+  const res=[];out.forEach(function(b){
+    const prev=res[res.length-1];
+    if(b.k!=='tbl'&&(!b.t||b.t.length<2&&!/\w/.test(b.t)))return;
+    if(prev&&prev.k===b.k&&prev.t&&prev.t===b.t)return;
+    res.push(b);
+  });
+  return res;
+}
+function captureScreen(){
+  const g=function(i){return document.getElementById(i)};
+  let roots,title,ctx={btn:true};
+  const avp=g('avp');
+  if(avp&&avp.classList.contains('open')){roots=[g('avpmsg')];ctx.btn=false;title='Conversația cu Mara'}
+  else if(g('run')&&g('run').classList.contains('show')){roots=[g('run-body')];title='Lecție / exercițiu'}
+  else if(g('ov')&&g('ov').classList.contains('open')){roots=[g('ovb')];title='Fereastră'}
+  else{roots=[g('main')||g('app')];ctx.btn=false;title='Ecran Engleză Marius'}
+  const blocks=toBlocks(roots,ctx);
+  const h=blocks.find(function(b){return b.k==='h1'});
+  if(h&&h.t&&h.t.length<80)title=h.t;
+  return {title:title,blocks:blocks};
+}
+function captureEl(el){const ctx={btn:!!(el.closest&&el.closest('#run,#ov')),};const blocks=toBlocks([el],ctx);const h=blocks.find(function(b){return b.k==='h1'});return {title:(h&&h.t&&h.t.length<80)?h.t:'Zona aleasă',blocks:blocks}}
+function blocksToSheets(m){
+  const rows=[],tabs=[];
+  m.blocks.forEach(function(b){
+    if(b.k==='h1'||b.k==='h2')rows.push([b.k==='h1'?'Titlu':'Subtitlu',b.t]);
+    else if(b.k==='p'||b.k==='li')rows.push([b.k==='li'?'Element':'Text',b.t]);
+    else if(b.k==='tbl'){rows.push(['Tabel','Vezi foaia „Tabel '+(tabs.length+1)+'”']);tabs.push({name:'Tabel '+(tabs.length+1),head:b.head,rows:b.rows,w:b.head.map(function(){return 28})})}
+  });
+  return [{name:'Conținut',head:['Tip','Text'],rows:rows,w:[12,110]}].concat(tabs.slice(0,20));
+}
+const BKEY='marius_basket';
+function loadBasket(){try{return JSON.parse(localStorage.getItem(BKEY)||'[]')}catch(e){return []}}
+function saveBasket(){try{localStorage.setItem(BKEY,JSON.stringify(S2.basket))}catch(e){}}
+
+/* ---------- interfață ---------- */
+const st=document.createElement('style');st.textContent=
+'#xpdlg{position:fixed;inset:0;z-index:100002;background:var(--bg);color:var(--txt);display:flex;flex-direction:column;padding:calc(12px + var(--sat,0px)) 14px calc(12px + var(--sab,0px));max-width:560px;margin:0 auto;width:100%}'
++'#xpdlg h3{margin:0;font-size:19px;flex:1}#xpdlg .xh{display:flex;align-items:center;gap:8px;margin-bottom:8px}'
++'#xpdlg .xb{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}#xpdlg .xs{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:12px 0 6px}'
++'#xpdlg .xchips{display:flex;gap:6px;flex-wrap:wrap}#xpdlg .xc{border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:99px;padding:8px 13px;font-size:14px;cursor:pointer}#xpdlg .xc.on{background:var(--acc);border-color:var(--acc);color:#fff}'
++'#xpdlg .xl{max-height:34vh;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:var(--card2)}#xpdlg .xr{display:flex;gap:10px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}#xpdlg .xr input{width:19px;height:19px;flex:none}#xpdlg .xr small{color:var(--mut);margin-left:auto;white-space:nowrap}'
++'#xpdlg input[type=search]{width:100%;box-sizing:border-box;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;margin-bottom:6px}'
++'#xpdlg .xf{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}#xpdlg .xf button{padding:12px 6px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:15px;font-weight:700;cursor:pointer}#xpdlg .xf button.on{background:var(--acc);border-color:var(--acc);color:#fff}'
++'#xpdlg .xgo{margin-top:10px;width:100%;padding:14px;border-radius:14px;border:0;background:var(--acc);color:#fff;font-size:16px;font-weight:700;cursor:pointer}#xpdlg .xgo:disabled{opacity:.5}#xpdlg .xm{min-height:20px;font-weight:600;color:#ffd166;font-size:13.5px;color:var(--mut);margin-top:6px;text-align:center}';
+st.textContent+='#xpick .xc{border:1px solid #3a3f66;background:#262a4d;color:#fff;border-radius:99px;padding:9px 14px;font-size:14px;cursor:pointer}#xpick .xc.on{background:#e94560;border-color:#e94560}';
+document.head.appendChild(st);
+const S2={cap:null,basket:loadBasket(),what:'lessons',ids:new Set(),fmt:'pdf',lv:'',q:'',parts:{intro:true,words:true,sents:true,quiz:true}};
+function lessonList(){
+  const q=S2.q.trim().toLowerCase();
+  return allL().filter(function(l){return (!S2.lv||l.lvl===S2.lv)&&(!q||(l.title+' '+l.cat).toLowerCase().indexOf(q)>=0)});
+}
+function render(){
+  const d=document.getElementById('xpdlg');if(!d)return;
+  const chip=function(a,k,t,on){return '<button class="xc'+(on?' on':'')+'" data-x="'+a+'" data-k="'+k+'">'+t+'</button>'};
+  let h='<div class="xh"><h3>📤 Exportă din aplicație</h3><button class="xc" data-x="close">✕</button></div><div class="xb">';
+  const hasCap=S2.cap&&S2.cap.blocks.length>0;
+  h+='<div class="xs">Ce vrei să exporți?</div><div class="xchips">'+(curLes()?chip('curles','','📖 Toată lecția deschisă',false):'')+(hasCap?chip('what','screen','📱 Ce văd acum',S2.what==='screen'):'')+chip('pick','','👆 Alege o zonă',false)+chip('what','basket','🧺 Colecția mea ('+S2.basket.length+')',S2.what==='basket')+chip('what','lessons','📘 Lecții',S2.what==='lessons')+chip('what','mywords','🔤 Cuvintele mele',S2.what==='mywords')+chip('what','progress','📈 Progresul meu',S2.what==='progress')+chip('what','dialogs','🎭 Dialoguri',S2.what==='dialogs')+chip('what','chat','💬 Conversația cu Mara',S2.what==='chat')+'</div>';
+  if(S2.what==='screen'&&hasCap){
+    const pv=S2.cap.blocks.slice(0,6).map(function(b){return X(b.k==='tbl'?'[tabel '+b.rows.length+' rânduri]':b.t).slice(0,90)}).join('<br>');
+    h+='<div class="xs">Conținut capturat: '+X(S2.cap.title)+' ('+S2.cap.blocks.length+' blocuri)</div><div class="xl" style="padding:10px;font-size:13px;line-height:1.5">'+pv+(S2.cap.blocks.length>6?'<br>…':'')+'</div>';
+    h+='<div class="xchips" style="margin-top:6px">'+chip('addbasket','','➕ Adaugă în colecție',false)+chip('pick','','👆 Alege altă zonă',false)+'</div>';
+  }
+  if(S2.what==='basket'){
+    h+='<div class="xs">Colecția mea</div>'+(S2.basket.length?'<div class="xl">'+S2.basket.map(function(it,i){return '<div class="xr"><span>'+X(it.title)+'</span><small>'+it.blocks.length+' blocuri</small><button class="xc" data-x="rmb" data-k="'+i+'">✕</button></div>'}).join('')+'</div><div class="xchips" style="margin-top:6px">'+chip('clrb','','Golește colecția',false)+'</div>':'<div class="xm">Colecția e goală. Deschide un ecran, apasă 📤 și „➕ Adaugă în colecție”; repetă pentru alte ecrane, apoi exportă tot într-un singur fișier.</div>');
+  }
+  if(S2.what==='lessons'){
+    try{if(typeof R!=='undefined'&&R&&R.les&&S2.ids.has(R.les.id))h+='<div class="xs" style="color:#ffd166">📘 Lecția deschisă („'+X(R.les.title).slice(0,50)+'”) e deja bifată: se exportă toată, cu explicații, cuvinte, propoziții și quiz.</div>'}catch(e){}
+    h+='<div class="xs">Ce din lecții</div><div class="xchips">'+[['intro','Explicație'],['words','Cuvinte + IPA'],['sents','Propoziții'],['quiz','Quiz cu răspunsuri']].map(function(p){return chip('part',p[0],p[1],S2.parts[p[0]])}).join('')+'</div>';
+    h+='<div class="xs">Alege lecțiile ('+S2.ids.size+' selectate)</div><input type="search" id="xq" placeholder="Caută lecție…" value="'+X(S2.q)+'">';
+    h+='<div class="xchips" style="margin-bottom:6px">'+chip('lv','','Toate',!S2.lv)+LEVELS.map(function(L){return chip('lv',L.id,L.id,S2.lv===L.id)}).join('')+'</div>';
+    const ls=lessonList(),shown=ls.slice(0,150);
+    h+='<div class="xchips" style="margin-bottom:6px">'+chip('selall','','Tot'+(S2.lv?' nivelul '+S2.lv:'')+' ('+ls.length+')',false)+chip('selalllv','','🌍 Toate nivelurile ('+LESSONS.length+')',false)+chip('selnone','','Șterge selecția',false)+'</div>';
+    h+='<div class="xl">'+shown.map(function(l){return '<label class="xr"><input type="checkbox" data-x="tg" data-id="'+l.id+'"'+(S2.ids.has(l.id)?' checked':'')+'><span>'+X(l.title)+'</span><small>'+l.lvl+'</small></label>'}).join('')+(ls.length>shown.length?'<div class="xr" style="color:var(--mut)">… încă '+(ls.length-shown.length)+'. Folosește căutarea sau nivelul.</div>':'')+'</div>';
+  }
+  h+='<div class="xs">Format</div><div class="xf">'+[['pdf','📕 PDF'],['docx','📘 Word'],['xlsx','📗 Excel']].map(function(f){return '<button class="'+(S2.fmt===f[0]?'on':'')+'" data-x="fmt" data-k="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="xs">Alte opțiuni</div><div class="xchips">'+chip('backup','','💾 Backup progres (JSON)',false)+chip('import','','⬆ Importă progres',false)+chip('appsave','','📱 Aplicația completă (HTML)',false)+chip('link','','🔗 Copiază linkul',false)+'</div><input type="file" id="xfile" accept=".json,application/json" style="display:none">';
+  h+='</div><div class="xm" id="xm">PDF: pagini gata de citit/tipărit. Word: text editabil. Excel: tabele. Pentru mai multe niveluri, PDF și Word se creează câte un fișier pe nivel; Excel e un singur registru.</div>';
+  h+='<button class="xgo" data-x="go">⬇ Creează și salvează</button>';
+  d.innerHTML=h;
+}
+function open(pre,keepCap){
+  let d=document.getElementById('xpdlg');if(!keepCap){try{S2.cap=captureScreen()}catch(e){S2.cap=null}}
+  if(d)d.remove();
+  d=document.createElement('div');d.id='xpdlg';document.body.appendChild(d);
+  S2.ids=new Set();
+  try{const cl=curLes();const cur=(cl&&cl.id)||(S&&S.lastId);if(cur&&allL().some(function(l){return l.id===cur}))S2.ids.add(cur);S2.hasRun=!!cl}catch(e){}
+  S2.what=pre||(S2.hasRun?'lessons':((S2.cap&&S2.cap.blocks.length>1)?'screen':'lessons'));
+  render();
+  d.addEventListener('click',onClick);
+  d.addEventListener('input',function(e){if(e.target.id==='xq'){S2.q=e.target.value;const pos=e.target.selectionStart;render();const i=document.getElementById('xq');if(i){i.focus();try{i.setSelectionRange(pos,pos)}catch(x){}}}});
+}
+const msg=function(t){const m=document.getElementById('xm');if(m)m.textContent=t};
+async function onClick(e){
+  const el=e.target.closest('[data-x]');if(!el)return;const a=el.dataset.x,k=el.dataset.k;
+  if(a==='tg'){if(el.checked)S2.ids.add(el.dataset.id);else S2.ids.delete(el.dataset.id);const s=document.querySelector('#xpdlg .xs:nth-of-type(3)');return render()}
+  if(a==='close'){document.getElementById('xpdlg').remove();return}
+  if(a==='what'){S2.what=k;render()}else if(a==='part'){S2.parts[k]=!S2.parts[k];render()}else if(a==='lv'){S2.lv=k;render()}
+  else if(a==='selall'){lessonList().forEach(function(l){S2.ids.add(l.id)});render()}else if(a==='selalllv'){LESSONS.forEach(function(l){S2.ids.add(l.id)});render()}else if(a==='selnone'){S2.ids.clear();render()}
+  else if(a==='fmt'){S2.fmt=k;render()}
+  else if(a==='addbasket'){if(S2.cap){S2.basket.push(S2.cap);saveBasket();msg('Adăugat. În colecție: '+S2.basket.length);render();msg('✅ Adăugat. În colecție: '+S2.basket.length)}}
+  else if(a==='rmb'){S2.basket.splice(+k,1);saveBasket();render()}
+  else if(a==='clrb'){S2.basket=[];saveBasket();render()}
+  else if(a==='pick'){startPick()}
+  else if(a==='curles'){const cl=curLes();if(cl){S2.ids=new Set([cl.id]);S2.what='lessons';S2.lv='';S2.q='';S2.parts={intro:true,words:true,sents:true,quiz:true};render();msg('Lecția „'+cl.title+'” e selectată. Alege formatul și apasă „Creează și salvează”.')}}
+  else if(a==='backup'){const o=Object.assign({},S);o.chat=[];const r=await deliver(new Blob([JSON.stringify({app:'engleza-marius',v:1,exported:new Date().toISOString(),state:o},null,1)],{type:'application/json'}),'Engleza-Marius-progres-'+new Date().toISOString().slice(0,10)+'.json');msg(r==='saved'?'✅ Backup salvat.':'Salvarea nu s-a făcut.')}
+  else if(a==='import'){const f=document.getElementById('xfile');f.onchange=function(){const fl=f.files&&f.files[0];if(!fl)return;fl.text().then(function(t){try{const o=JSON.parse(t);if(!o||o.app!=='engleza-marius'||!o.state)throw new Error('fișier necunoscut');const old=S.xp;Object.keys(o.state).forEach(function(k){if(k!=='gen'&&k!=='chat')S[k]=o.state[k]});if(o.state.gen&&o.state.gen.length)S.gen=o.state.gen;save();msg('Progres importat (XP '+old+' → '+S.xp+'). Reîncarc…');setTimeout(function(){location.reload()},1200)}catch(e){msg('Fișier invalid: '+e.message)}})};f.click()}
+  else if(a==='appsave'){msg('Pregătesc aplicația…');let src='';try{const r=await fetch(location.href);if(r.ok)src=await r.text()}catch(e){}if(!src||src.indexOf('id="phdict"')<0)src='<!DOCTYPE html>\n'+document.documentElement.outerHTML;const r=await deliver(new Blob([src],{type:'text/html'}),'Engleza-Marius.html');msg(r==='saved'?'✅ Aplicația a fost salvată.':'Salvarea nu s-a făcut.')}
+  else if(a==='link'){const u='https://yct2kfpg4m-beep.github.io/marius/';let ok=false;try{const i=document.createElement('input');i.value=u;document.body.appendChild(i);i.select();ok=document.execCommand('copy');i.remove()}catch(x){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(u).catch(function(){});msg('Link copiat: '+u)}
+  else if(a==='go'){
+    const btn=el;
+    if(S2.what==='lessons'){
+      if(!S2.ids.size){msg('Alege cel puțin o lecție.');return}
+      if(!Object.keys(S2.parts).some(function(p){return S2.parts[p]})){msg('Bifează cel puțin o parte din lecții.');return}
+    }
+    if(S2.what==='screen'&&!(S2.cap&&S2.cap.blocks.length)){msg('Nu am găsit conținut pe ecran. Folosește „Alege o zonă”.');return}
+    if(S2.what==='basket'&&!S2.basket.length){msg('Colecția e goală.');return}
+    btn.disabled=true;msg('Se creează fișierul…');
+    try{
+      await new Promise(function(r){setTimeout(r,30)});
+      let groups;
+      if(S2.what==='lessons'&&S2.fmt!=='xlsx'){
+        const by={},order=[];Array.from(S2.ids).forEach(function(id){const l=LESSONS.find(function(x){return x.id===id});if(!l)return;const k=l.lvl;if(!by[k]){by[k]=[];order.push(k)}by[k].push(id)});
+        order.sort();
+        const ch=[];order.forEach(function(k){const a=by[k];for(let i=0;i<a.length;i+=250)ch.push({k:k,ids:a.slice(i,i+250),part:Math.floor(i/250)+1,tot:Math.ceil(a.length/250)})});
+        groups=(ch.length>1||S2.ids.size>250)?ch:[{k:'',ids:Array.from(S2.ids),part:1,tot:1}];
+      }else groups=[{k:'',ids:Array.from(S2.ids),part:1,tot:1}];
+      let okc=0,noc=0;
+      for(let gi=0;gi<groups.length;gi++){
+        const g=groups[gi];
+        const m=build({what:S2.what,ids:g.ids,parts:S2.parts,cap:S2.cap,basket:S2.basket});
+        m.small=g.ids.length>60;
+        const tag=groups.length>1?' ('+(gi+1)+'/'+groups.length+')':'';
+        msg('Se creează fișierul'+tag+'…');
+        let blob;
+        if(S2.fmt==='docx')blob=await docx(m);else if(S2.fmt==='xlsx'){if(!m.sheets.length&&S2.what==='lessons'){msg('Nu există tabele pentru ce ai bifat (alege Cuvinte, Propoziții sau Quiz).');btn.disabled=false;return}blob=await xlsx(m)}
+        else blob=await pdf(m,function(n){msg('Se creează PDF-ul'+tag+'… pagina '+n)});
+        const suf=g.k?'-'+g.k+(g.tot>1?'-partea'+g.part:''):'';
+        const name='Engleza-Marius-'+m.fname+suf+'-'+new Date().toISOString().slice(0,10)+'.'+S2.fmt;
+        const r=await deliver(blob,name);
+        if(r==='saved')okc++;else{noc++;if(r==='declined')break}
+        msg((r==='saved'?'✅ Salvat: ':'Nesalvat: ')+name+(gi<groups.length-1?' · continui…':''));
+      }
+      msg(noc?('Terminat: '+okc+' salvate, '+noc+' nesalvate.'):('✅ Gata: '+okc+(okc===1?' fișier salvat.':' fișiere salvate.')));
+    }catch(err){msg('Eroare la creare: '+(err&&err.message||err))}
+    btn.disabled=false;
+  }
+}
+
+let pickEl=null,pickSel=null;
+function startPick(){
+  const d=document.getElementById('xpdlg');if(d)d.style.display='none';
+  let bar=document.getElementById('xpick');if(bar)bar.remove();
+  bar=document.createElement('div');bar.id='xpick';
+  bar.style.cssText='position:fixed;left:10px;right:10px;bottom:calc(14px + var(--sab,0px));z-index:100003;background:#1b1e33;color:#fff;border:1px solid #ffd166;border-radius:16px;padding:10px 12px;font:14px system-ui;display:flex;gap:6px;flex-wrap:wrap;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+  bar.innerHTML='<div style="flex:1 1 100%" id="xptxt">👆 Atinge un element: se încadrează în galben. „Mai mare” extinde zona. Fără selecție, „Exportă zona” ia tot ecranul.</div><button data-p="up" class="xc">⬆ Mai mare</button><button data-p="ok" class="xc on">Exportă zona</button><button data-p="no" class="xc">Anulează</button>';
+  document.body.appendChild(bar);
+  const clear=function(){if(pickSel){pickSel.style.outline=pickSel.__po||'';pickSel=null}};
+  const select=function(el){clear();pickSel=el;el.__po=el.style.outline;el.style.outline='3px solid #ffd166';const t=document.getElementById('xptxt');if(t)t.textContent='Selectat: '+norm(el.innerText||'').slice(0,70)+'…'};
+  const stop=function(){document.removeEventListener('click',onTap,true);document.removeEventListener('touchstart',onStart,true);document.removeEventListener('touchend',onTouch,true);clear();bar.remove()};
+  const onTap=function(e){
+    const t=e.target;
+    if(bar.contains(t)){e.stopPropagation();e.preventDefault();
+      const a=t.dataset&&t.dataset.p;
+      if(a==='up'&&pickSel&&pickSel.parentElement&&pickSel.parentElement!==document.body)select(pickSel.parentElement);
+      else if(a==='ok'){if(!pickSel){const df=document.getElementById('run-body')||document.getElementById('main')||document.getElementById('app');if(df)select(df)}if(pickSel){const cp=captureEl(pickSel);stop();S2.cap=cp;const dd=document.getElementById('xpdlg');if(dd){dd.style.display='';}open('screen',true)}}
+      else if(a==='no'){stop();const dd=document.getElementById('xpdlg');if(dd)dd.style.display=''}
+      return}
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    let el=t;if(el.nodeType!==1)el=el.parentElement;
+    if(el&&el.closest('#xpdlg'))return;
+    select(el);
+  };
+  let t0=null;
+  const onStart=function(e){const t=e.touches&&e.touches[0];t0=t?{x:t.clientX,y:t.clientY}:null};
+  const onTouch=function(e){
+    if(bar.contains(e.target))return;
+    const t=e.changedTouches&&e.changedTouches[0];
+    if(!t){e.preventDefault();return}
+    if(t0&&(Math.abs(t.clientX-t0.x)>10||Math.abs(t.clientY-t0.y)>10))return;
+    e.preventDefault();
+    const el=document.elementFromPoint(t.clientX,t.clientY);
+    if(el&&!el.closest('#xpdlg,#xpick'))select(el);
+  };
+  document.addEventListener('click',onTap,true);document.addEventListener('touchstart',onStart,true);document.addEventListener('touchend',onTouch,true);
+}
+window.__expDocs=open;window.__exportDlg=function(){open('')};
+document.addEventListener('click',function(e){const el=e.target.closest&&e.target.closest('[data-a="expdocs"]');if(el){e.stopImmediatePropagation();e.preventDefault();open(el.dataset.w||'')}},true);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){const x=document.getElementById('xpdlg');if(x){x.remove();e.stopImmediatePropagation()}}},true);
+/* butoane de acces */
+function inject(){
+  const sh=document.querySelector('[data-a="share"]');
+  if(sh&&!document.querySelector('[data-a="expdocs"].xin')){const b=document.createElement('button');b.className='btn sm ghost xin';b.setAttribute('data-a','expdocs');b.style.marginTop='4px';b.textContent='📄 Exportă lecții, cuvinte, progres (PDF · Word · Excel)';sh.parentNode.insertBefore(b,sh);sh.parentNode.insertBefore(document.createElement('br'),sh)}
+  const mk=function(ref){const b=document.createElement('button');b.className=ref.className+' xin2';b.setAttribute('data-a','expdocs');b.setAttribute('aria-label','Exportă');b.title='Exportă în PDF, Word, Excel';b.textContent='📤';b.style.fontSize=ref.dataset.a==='theme'?'':'16px';return b};
+  const th=document.querySelector('[data-a="theme"]');
+  if(th&&!th.parentNode.querySelector('.xin2'))th.parentNode.insertBefore(mk(th),th);
+  const cl=document.querySelector('#run [data-a="close"]');
+  if(cl&&!cl.parentNode.querySelector('.xin2'))cl.parentNode.insertBefore(mk(cl),cl);
+}
+new MutationObserver(function(){inject()}).observe(document.body,{childList:true,subtree:true});inject();
+})();
+
+
+/* ===== n10: memento zilnic — minimum 2 lecții pe zi ===== */
+(function(){
+const MK='marius_memo_day';
+function rd(){try{return localStorage.getItem(MK)||''}catch(e){return ''}}
+function wr(v){try{localStorage.setItem(MK,v)}catch(e){}}
+function today(){try{return (S.days&&S.days[dayKey(0)])||0}catch(e){return 0}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function byId(id){return LESSONS.find(function(l){return l.id===id})}
+function where(){
+  // unde a rămas: ultima lecție atinsă + lecția la care se continuă
+  let last=S.lastId?byId(S.lastId):null;
+  let next=null;
+  if(last){next=S.done[last.id]?nextLessonAfter(last.id):last}
+  if(!next){next=baseLessons().find(function(l){return !S.done[l.id]})||baseLessons()[0]||LESSONS[0]}
+  if(last&&last.gen&&S.done[last.id]){last=last}
+  return {last:last,next:next};
+}
+function nm(l){return l?esc(l.title||l.name||l.id):''}
+function close(){const e=document.getElementById('memo2');if(e)e.remove()}
+function show(force){
+  if(!force&&today()>0)return;
+  if(document.getElementById('memo2'))return;
+  const w=where();if(!w.next)return;
+  const first=!w.last&&!Object.keys(S.done||{}).length;
+  const d=document.createElement('div');d.id='memo2';
+  d.style.cssText='position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  let h='<div role="dialog" aria-modal="true" style="background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:18px;max-width:420px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:inherit">';
+  h+='<div style="font-size:34px;text-align:center">⏰</div>';
+  h+='<h3 style="margin:6px 0 8px;text-align:center;font-size:19px">'+(first?'Hai să începem!':'Azi nu ai făcut nicio lecție')+'</h3>';
+  h+='<p style="margin:0 0 10px;text-align:center;color:var(--mut);font-size:14px;line-height:1.45">Ținta zilnică: <b style="color:var(--txt)">minimum 2 lecții pe zi</b>.';
+  const st=curStreak();if(st>0)h+=' Ai o serie de <b style="color:var(--txt)">'+st+' zile 🔥</b> — nu o pierde!';
+  h+='</p>';
+  h+='<div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5">';
+  if(w.last&&!first)h+='<div style="color:var(--mut);font-size:12px">Ai rămas la:</div><div><b>'+nm(w.last)+'</b>'+(S.done[w.last.id]?' <span style="color:var(--ok)">✓ terminată</span>':' <span style="color:var(--ipa)">neterminată</span>')+'</div>';
+  h+='<div style="color:var(--mut);font-size:12px;margin-top:'+(w.last&&!first?'6':'0')+'px">'+(w.last&&S.done[w.last.id]?'Urmează:':'Începem cu:')+'</div><div><b>'+nm(w.next)+'</b></div>';
+  h+='</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">';
+  h+='<button id="memo2go" style="background:var(--acc);color:#fff;border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:700;cursor:pointer">▶ Reia de unde am rămas</button>';
+  h+='<button id="memo2later" style="background:transparent;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:14px;cursor:pointer">Mai târziu</button>';
+  h+='</div></div>';
+  d.innerHTML=h;document.body.appendChild(d);
+  wr(dayKey(0));
+  document.getElementById('memo2go').onclick=function(){close();try{openLesson(w.next.id)}catch(e){toast('Nu pot deschide lecția')}};
+  document.getElementById('memo2later').onclick=close;
+  d.addEventListener('click',function(e){if(e.target===d)close()});
+}
+function check(){
+  try{
+    if(rd()===dayKey(0))return;           // o singură dată pe zi
+    if(today()>0)return;                  // a făcut deja o lecție azi → fără mesaj
+    const run=document.getElementById('run');
+    if(run&&run.classList.contains('show'))return; // e într-o lecție
+    show(false);
+  }catch(e){}
+}
+setTimeout(check,1800);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(check,600)});
+window.addEventListener('focus',function(){setTimeout(check,600)});
+setInterval(check,10*60*1000);
+window.__memo=show; // test: __memo(true)
+})();
 </script>
 </body>
 </html>
