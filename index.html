@@ -193536,7 +193536,7 @@ function syncLabel(){
     const db=await window.claude.use('db'),user=await window.claude.use('user');
     if(!db||!user)return;
     const id=await user.id();if(!id)return;
-    DBREF=db.doc('data/users/'+id+'/progress');
+    DBREF=db.doc('data/users/'+id+'/progress'+((window.__TLX||'en')==='en'?'':'_'+window.__TLX));
     const changed=await pullRemote();
     if(changed&&!R)render();else if(tab==='progress'&&!R)render();
     schedulePush();pushRemote();
@@ -204077,7 +204077,7 @@ autoLocal=function(lvl,theme){
   const ws=pickN(levelWords(lvl).filter(function(w){return w.ro&&w.ipa&&(zh?w.en.length>=2:w.en.length>3)}),8);
   const pool=pickN(levelSents(lvl).filter(function(s){return s[0]&&s[1]}),80).sort(function(a,b){return b[0].length-a[0].length}).slice(0,6).map(function(s){return s.slice()});
   const n=(S.auto.n||0)+1,ln=LN();
-  const gl={id:'g'+Date.now()+Math.floor(Math.random()*999),lvl:lvl,cat:'Fonetică',gen:true,auto:true,title:'Citire: fraze și reguli – '+theme+' (set '+n+')',
+  const gl={id:'g'+Date.now()+Math.floor(Math.random()*999),lvl:lvl,cat:'Fonetică',gen:true,auto:true,title:'Citire: fraze și reguli – nivel '+lvl+' (set '+n+')',
     intro:'Lecție de **citire în fraze** în '+ln+' (nivel '+lvl+'). Citește fiecare frază pe **grupuri de sens**, cu o scurtă pauză între ele. Urmărește: **pronunția** (vezi transcrierea IPA și apasă 🔊 ca să asculți), **ortografia** (cum se scrie ce auzi), '+(zh?'**tonurile** și ritmul frazei':'**accentul și ritmul** frazei')+', **gramatica** (timpul, genul și acordul) și **vocabularul** din context. La final rezolvă întrebările.',
     words:ws,sents:pool,quiz:[]};
   ws.slice(0,2).forEach(function(w){gl.quiz.push({q:'Care este transcrierea corectă a cuvântului „'+w.en+'"?',a:w.ipa,w:pickN(ws.filter(function(x){return x.ipa!==w.ipa}).map(function(x){return x.ipa}),3),x:w.en+' se citește '+w.ipa+' ('+w.ro+').'})});
@@ -204294,6 +204294,42 @@ document.addEventListener('click',function(e){
   if(t.id==='pdnext'){newEx();refresh()}
 },true);
 document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target&&e.target.id==='deq'){const b=document.getElementById('dego');if(b)b.click()}});
+})();
+/* ===== n19: lecțiile generate rămân în limba lor; sincronizare separată pe limbă ===== */
+(function(){
+const NAMES={'germană':'de','franceză':'fr','spaniolă':'es','italiană':'it','portugheză':'pt','chineză':'zh','turcă':'tr'};
+const ENW=/\b(the|and|that|with|because|this|was|you|are|his|her|they)\b/i;
+function looksEn(l){let n=0;(l.sents||[]).forEach(function(s){if(s&&typeof s[0]==='string'&&ENW.test(s[0]))n++});return n>=3}
+function ltl(l){
+  if(!l)return 'en';
+  let c=l.tl;
+  if(!c){const m=/citire în fraze\*\* în ([a-zăâîșț]+)/i.exec(l.intro||'');c=(m&&NAMES[m[1].toLowerCase()])||'en'}
+  if(c!=='en'&&looksEn(l))return 'bad';
+  return c;
+}
+window.__lessonTL=ltl;
+function purge(){
+  try{
+    const bad=S.gen.filter(function(g){return ltl(g)!==TL});
+    if(!bad.length)return false;
+    const ids={};bad.forEach(function(b){ids[b.id]=1});
+    S.gen=S.gen.filter(function(g){return !ids[g.id]});
+    for(let i=LESSONS.length-1;i>=0;i--){if(ids[LESSONS[i].id])LESSONS.splice(i,1)}
+    try{S.auto.n=autoMax()}catch(e){}
+    try{saveLocal()}catch(e){}
+    return true;
+  }catch(e){return false}
+}
+/* etichetează lecțiile noi cu limba lor */
+const _sg=saveGen;
+saveGen=function(gl){if(gl&&TL!=='en'&&!gl.tl)gl.tl=TL;return _sg(gl)};
+/* după orice sincronizare, scoate lecțiile din altă limbă */
+const _mr=mergeRemote;
+mergeRemote=function(r){const c=_mr(r);const p=purge();return c||p};
+const _pr=pullRemote;
+pullRemote=async function(){const c=await _pr();const p=purge();if(p){try{placeAuto()}catch(e){}}return c||p};
+if(purge()){try{if(!R)render()}catch(e){}}
+setTimeout(function(){if(purge()){try{if(!R)render()}catch(e){}}},3000);
 })();
 </script>
 </body>
