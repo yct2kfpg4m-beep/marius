@@ -164832,7 +164832,7 @@ else throw new Error('inflate')}while(!last);
 return new TextDecoder('utf-8').decode(out.subarray(0,o))}
 function __unpackB64(b){var s=atob(b),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return __inflate(u)}
 
-(function(){var v='en';try{v=localStorage.getItem('marius_tl')||'en'}catch(e){}window.__PACKS={};if(v!=='en'&&/^[a-z]{2}$/.test(v)){document.write('<scr'+'ipt src="pk_'+v+'.js"></scr'+'ipt>')}})();
+window.__micHint=function(){try{return (window.top!==window)?' (În aplicația Claude microfonul poate fi blocat de Claude. Deschide versiunea completă: https://yct2kfpg4m-beep.github.io/marius/ )':''}catch(e){return ' (Deschide versiunea completă: https://yct2kfpg4m-beep.github.io/marius/ )'}};(function(){var v='en';try{v=localStorage.getItem('marius_tl')||'en'}catch(e){}window.__PACKS={};if(v!=='en'&&/^[a-z]{2}$/.test(v)){document.write('<scr'+'ipt src="pk_'+v+'.js"></scr'+'ipt>')}})();
 </script>
 <script>
 (function(){try{if(window.__PZ)(0,eval)(__unpackB64(window.__PZ))}catch(e){}var v='en';try{v=localStorage.getItem('marius_tl')||'en'}catch(e){}window.__TLX=(window.__PACKS&&window.__PACKS[v])?v:'en';window.__LD=[];window.__DLG_L=null;window.__PK=null;if(window.__TLX!=='en'){window.__PK=window.__PACKS[window.__TLX];window.__LD=window.__PK.lessons;window.__DLG_L=window.__PK.dlg}})();
@@ -193179,7 +193179,7 @@ function startRec(){
     setFoot(good||best>=0.55?nextBtn():'<button class="btn ghost" data-a="next">Sari peste</button>');
     if(good){beep(true)}
   };
-  r.onerror=function(ev){err=true;const e=ev.error;fb.textContent=e==='not-allowed'||e==='service-not-allowed'?'Microfonul este blocat. Permite accesul în setările browserului.':e==='no-speech'?'Nu am auzit nimic. Apasă din nou 🎤.':e==='network'?'Recunoașterea vocală are nevoie de conexiune la internet în acest browser.':'Nu am putut asculta ('+e+'). Poți sări peste.';setFoot(nextBtn('Sari peste'))};
+  r.onerror=function(ev){err=true;const e=ev.error;fb.textContent=e==='not-allowed'||e==='service-not-allowed'?'Microfonul este blocat. Permite accesul în setările browserului.'+__micHint():e==='no-speech'?'Nu am auzit nimic. Apasă din nou 🎤.':e==='network'?'Recunoașterea vocală are nevoie de conexiune la internet în acest browser.':'Nu am putut asculta ('+e+'). Poți sări peste.';setFoot(nextBtn('Sari peste'))};
   r.onend=function(){mic.classList.remove('rec');rec=null;if(!got&&!err)fb.textContent='Nu am auzit nimic. Apasă din nou 🎤.'};
   try{r.start()}catch(e){rec=null}
 }
@@ -198938,7 +198938,7 @@ function phMic(t){
     for(let i=0;i<res.length;i++){const sc=sim(t,res[i].transcript);if(sc>best){best=sc;txt=res[i].transcript}}
     S.pronUsed++;save();checkAch();
     fb.textContent=best>=0.85?'🎉 Foarte bine! Am auzit: „'+txt+'”':best>=0.55?'👍 Aproape. Am auzit: „'+txt+'”. Ascultă din nou 🔊 și repetă.':'Am auzit: „'+txt+'”. Ascultă 🐢 și încearcă încet, pe silabe.'};
-  r.onerror=function(ev){got=true;fb.textContent=ev&&ev.error==='not-allowed'?'Permite accesul la microfon în setările browserului.':'Nu am putut asculta. Încearcă din nou.'};
+  r.onerror=function(ev){got=true;fb.textContent=ev&&ev.error==='not-allowed'?'Permite accesul la microfon în setările browserului.'+__micHint():'Nu am putut asculta. Încearcă din nou.'};
   r.onend=function(){phRec=null;if(!got&&fb.textContent.indexOf('Te ascult')===0)fb.textContent='Nu am auzit nimic. Apasă din nou și vorbește.'};
   try{r.start()}catch(e){phRec=null;fb.textContent='Microfonul nu poate fi pornit.'}
 }
@@ -199792,7 +199792,7 @@ const AVP=(function(){
       if(fin){got=true;finalT=t;try{const r0=ev.results[ev.results.length-1];meta={conf:r0[0].confidence,alts:Array.prototype.slice.call(r0).map(function(a){return a.transcript}).slice(0,4)}}catch(x){}}
     };
     r.onerror=function(ev){const e=ev.error;got=true;
-      if(e==='not-allowed'||e==='service-not-allowed')addA('🎤 Microfonul este blocat. Permite accesul în setările browserului, apoi apasă din nou 🎤.');
+      if(e==='not-allowed'||e==='service-not-allowed')addA('🎤 Microfonul este blocat. Permite accesul în setările browserului, apoi apasă din nou 🎤.'+__micHint());
       else if(e==='no-speech'){if(onFail){failed=1;onFail('no-speech')}else addA('N-am auzit nimic. Apasă 🎤 și vorbește din nou.')}
       else if(e!=='aborted')addA('Microfonul nu a funcționat ('+e+'). Poți scrie întrebarea.');};
     r.onend=function(){micB&&micB.classList.remove('rec');rec=null;if(inp)inp.placeholder='Scrie sau vorbește: orice vrei…';
@@ -200177,7 +200177,7 @@ const AVP=(function(){
     speak([{t:txt,l:'en',a:S.acc}],async function(){
       if(cmpAud!==mine)return;
       let stream;
-      try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){setFb('Nu am acces la microfon. Permite microfonul în setările browserului. Recunoașterea vocală funcționează separat.');return}
+      try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){setFb('Nu am acces la microfon. Permite microfonul în setările browserului. Recunoașterea vocală funcționează separat.'+__micHint());return}
       const mr=new MediaRecorder(stream),ch=[];
       mr.ondataavailable=function(ev){if(ev.data&&ev.data.size)ch.push(ev.data)};
       const ms=Math.min(9000,1800+txt.split(/\s+/).length*700);
