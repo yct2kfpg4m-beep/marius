@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Engleză Marius</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f0f1a">
 <meta name="description" content="Engleză Marius – învață engleza gratuit, de la A1 la C2, cu interfață în română.">
@@ -164832,7 +164834,7 @@ else throw new Error('inflate')}while(!last);
 return new TextDecoder('utf-8').decode(out.subarray(0,o))}
 function __unpackB64(b){var s=atob(b),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return __inflate(u)}
 
-window.__micHint=function(){try{return (window.top!==window)?' (În aplicația Claude microfonul poate fi blocat de Claude. Deschide versiunea completă: https://yct2kfpg4m-beep.github.io/marius/ )':''}catch(e){return ' (Deschide versiunea completă: https://yct2kfpg4m-beep.github.io/marius/ )'}};(function(){var v='en';try{v=localStorage.getItem('marius_tl')||'en'}catch(e){}window.__PACKS={};if(v!=='en'&&/^[a-z]{2}$/.test(v)){document.write('<scr'+'ipt src="pk_'+v+'.js"></scr'+'ipt>')}})();
+window.__micHint=function(){try{return (window.top!==window)?' Deschide versiunea completă: https://yct2kfpg4m-beep.github.io/marius/':''}catch(e){return ''}};window.__micCopy=function(b){var u='https://yct2kfpg4m-beep.github.io/marius/';var ok=function(){b.textContent='✓ Copiat';setTimeout(function(){b.textContent='📋 Copiază linkul'},2000)};try{navigator.clipboard.writeText(u).then(ok,function(){throw 1});return}catch(e){}try{var t=document.createElement('textarea');t.value=u;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();t.setSelectionRange(0,999);document.execCommand('copy');document.body.removeChild(t);ok()}catch(e){window.prompt('Copiază linkul:',u)}};window.__micHintH=function(){try{var q=String.fromCharCode(34);return (window.top!==window)?'<br>Deschide versiunea completă (în Safari / Chrome):<br><span style='+q+'-webkit-user-select:text;user-select:text;word-break:break-all;color:#ffd166;font-weight:700'+q+'><a href='+q+'https://yct2kfpg4m-beep.github.io/marius/'+q+' target='+q+'_blank'+q+' rel='+q+'noopener noreferrer'+q+' style='+q+'color:#ffd166;text-decoration:underline'+q+'>https://yct2kfpg4m-beep.github.io/marius/</a></span><br><button type='+q+'button'+q+' onclick='+q+'__micCopy(this)'+q+' style='+q+'margin-top:6px;background:#232342;color:#fff;border:1px solid #e94560;border-radius:99px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer'+q+'>📋 Copiază linkul</button>':''}catch(e){return ''}};(function(){var v='en';try{v=localStorage.getItem('marius_tl')||'en'}catch(e){}window.__PACKS={};if(v!=='en'&&/^[a-z]{2}$/.test(v)){document.write('<scr'+'ipt src="pk_'+v+'.js"></scr'+'ipt>')}})();
 </script>
 <script>
 (function(){try{if(window.__PZ)(0,eval)(__unpackB64(window.__PZ))}catch(e){}var v='en';try{v=localStorage.getItem('marius_tl')||'en'}catch(e){}window.__TLX=(window.__PACKS&&window.__PACKS[v])?v:'en';window.__LD=[];window.__DLG_L=null;window.__PK=null;if(window.__TLX!=='en'){window.__PK=window.__PACKS[window.__TLX];window.__LD=window.__PK.lessons;window.__DLG_L=window.__PK.dlg}})();
@@ -199792,7 +199794,7 @@ const AVP=(function(){
       if(fin){got=true;finalT=t;try{const r0=ev.results[ev.results.length-1];meta={conf:r0[0].confidence,alts:Array.prototype.slice.call(r0).map(function(a){return a.transcript}).slice(0,4)}}catch(x){}}
     };
     r.onerror=function(ev){const e=ev.error;got=true;
-      if(e==='not-allowed'||e==='service-not-allowed')addA('🎤 Microfonul este blocat. Permite accesul în setările browserului, apoi apasă din nou 🎤.'+__micHint());
+      if(e==='not-allowed'||e==='service-not-allowed')addA('🎤 Microfonul este blocat. Permite accesul în setările browserului, apoi apasă din nou 🎤.'+__micHintH());
       else if(e==='no-speech'){if(onFail){failed=1;onFail('no-speech')}else addA('N-am auzit nimic. Apasă 🎤 și vorbește din nou.')}
       else if(e!=='aborted')addA('Microfonul nu a funcționat ('+e+'). Poți scrie întrebarea.');};
     r.onend=function(){micB&&micB.classList.remove('rec');rec=null;if(inp)inp.placeholder='Scrie sau vorbește: orice vrei…';
